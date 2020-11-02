@@ -1,0 +1,38 @@
+body {
+    font-family: sans-serif;
+}
+
+#container {
+    display: inline-block;
+    margin: auto;
+}
+
+select {
+    display: block;
+}
+
+.backup-config-container {
+    margin: 10px;
+    padding: 5px;
+    position: relative;
+    background: lightseagreen;
+}
+
+.stoped {
+    background: coral;
+}
+
+.del {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 2px;
+}
+
+#debug {
+    display: none;
+}
+
+#errors {
+    color: red
+}

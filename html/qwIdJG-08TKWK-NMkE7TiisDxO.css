@@ -12,6 +12,7 @@ select {
 }
 
 .backup-config-container {
+    width: 100%;
     margin: 10px;
     padding: 5px;
     position: relative;
@@ -20,6 +21,12 @@ select {
 
 .stoped {
     background: coral;
+}
+.gray {
+    background: gray;
+}
+.orange {
+    background: orange;
 }
 
 .del {
@@ -35,4 +42,8 @@ select {
 
 #errors {
     color: red
+}
+
+.hidden {
+    display: none;
 }

@@ -2,6 +2,96 @@
 
 const { spawn } = require('child_process');
 
+let sdpCollections = []
+var clientSAP = null
+function getSAP(host) {
+  if(clientSAP) clientSAP.close()
+
+  let madd = '239.255.255.255'
+  let port = 9875
+  clientSAP = dgram.createSocket({ type: "udp4", reuseAddr: true });
+
+  clientSAP.on('listening', function () {
+      console.log('UDP Client listening on ' + madd + ":" + port);
+      clientSAP.setBroadcast(true)
+      clientSAP.setMulticastTTL(128); 
+      clientSAP.addMembership(madd,host);
+  });
+
+  var removeSdp = (name) => {
+     let id = sdpCollections.findIndex((k) => {k.name == name;})
+     if(id >= 0) {
+        sendSDP(sdpCollections[id].sdp,"remove")
+       sdpCollections.splice(id,1)
+     }
+  }
+
+  clientSAP.on('message', function (message, remote) {
+    let sdp = sdpTransform.parse(message.toString().split("application/sdp")[1])
+    let timer = setTimeout( () => {
+      removeSdp(sdp.name)
+    } , 45000)
+    if(!sdpCollections.some(k => k.name == sdp.name)) {
+      sdpCollections.push({
+        sdp: sdp,
+        timer: timer,
+        name: sdp.name
+      })
+      sendSDP(sdp,"update")
+    }
+    else {
+      let item = sdpCollections.filter(k => k.name == sdp.name)[0]
+      item.timer.refresh()
+      item.sdp = sdp
+      sendSDP(sdp,"update")
+    }
+    //console.log(sdp.name,sdp.media[0].rtp)
+    
+  })
+
+
+  clientSAP.bind(port);
+}
+
+var sendSDP = (SDP,action) => {
+  wss2.clients.forEach(function each(client) {
+    if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: "streams",
+          action: action,
+          data: SDP
+        }));
+    }
+  })
+}
+
+var chooseInterface = (add) => {
+    sdpCollections.forEach((id) => {
+        sendSDP(id.sdp,"remove")
+    })
+    sdpCollections = []
+    getPTP(add)
+    getSAP(add)
+    selectedDevice = add
+}
+
+var getInterfaces = () => {
+    var netInt = os.networkInterfaces()
+    let addresses = []
+    Object.keys(netInt).forEach(i => {
+        let ip4 = netInt[i].filter(k => k.family == "IPv4")
+        if(ip4.length > 0)
+        ip4.forEach(p => {
+            addresses.push({
+            name: i,
+            ip: p.address,
+            mask: p.netmask
+            })
+        })
+    })
+    return addresses
+}
+
 var newSrtPingPong = (id,srcHost,srcPort,localPort) => {
     let srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort,"srt://:" + localPort])
     srt.stdout.on('data', (data) => {

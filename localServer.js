@@ -1,9 +1,14 @@
 
 
 const { spawn } = require('child_process');
+const os = require('os');
+var dgram = require('dgram'); 
+const sdpTransform = require('sdp-transform');
 
 let sdpCollections = []
 var clientSAP = null
+
+let selectedDevice = null;
 function getSAP(host) {
   if(clientSAP) clientSAP.close()
 
@@ -37,13 +42,11 @@ function getSAP(host) {
         timer: timer,
         name: sdp.name
       })
-      sendSDP(sdp,"update")
     }
     else {
       let item = sdpCollections.filter(k => k.name == sdp.name)[0]
       item.timer.refresh()
       item.sdp = sdp
-      sendSDP(sdp,"update")
     }
     //console.log(sdp.name,sdp.media[0].rtp)
     
@@ -53,24 +56,13 @@ function getSAP(host) {
   clientSAP.bind(port);
 }
 
-var sendSDP = (SDP,action) => {
-  wss2.clients.forEach(function each(client) {
-    if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: "streams",
-          action: action,
-          data: SDP
-        }));
-    }
-  })
-}
+
 
 var chooseInterface = (add) => {
     sdpCollections.forEach((id) => {
         sendSDP(id.sdp,"remove")
     })
     sdpCollections = []
-    getPTP(add)
     getSAP(add)
     selectedDevice = add
 }
@@ -85,7 +77,8 @@ var getInterfaces = () => {
             addresses.push({
             name: i,
             ip: p.address,
-            mask: p.netmask
+            mask: p.netmask,
+            selected: selectedDevice==p.address
             })
         })
     })
@@ -94,6 +87,51 @@ var getInterfaces = () => {
 
 var newSrtPingPong = (id,srcHost,srcPort,localPort) => {
     let srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort,"srt://:" + localPort])
+    srt.stdout.on('data', (data) => {
+        console.log(id + `stdout: ${data}`);
+      });
+    
+      srt.stderr.on('data', (data) => {
+        console.log(id + `stderr: ${data}`);
+        let sss = srtConfigs.filter((s) => s.id == id)
+        if(sss.length == 1 && data) {
+            let str = "" + `${data}`
+            sss[0].log += str.replace(/\n/g,"<br>")
+
+            let lasts = sss[0].log.split("<br>")
+            let last = lasts[lasts.length-2]
+            console.log("----> " + last)
+            switch(last) {
+                case "Accepted SRT target connection":
+                    sss[0].target_state = true;
+                    break;
+                case "Accepted SRT source connection":
+                    sss[0].source_state = true;
+                    break;
+                case "SRT target disconnected":
+                    sss[0].target_state = false;
+                    break;
+                case "SRT source disconnected":
+                    sss[0].source_state = false;
+                    break;
+                default:
+                    break
+            }
+
+        }
+      });
+
+      srt.on('exit',() => {
+        let sss = srtConfigs.filter((s) => s.id == id)
+        if(sss.length == 1) {
+            sss[0].status = 0
+        }
+      })
+    return srt
+}
+
+var newSrtToUdp = (id,input,output) => {
+    let srt = spawn("srt-live-transmit",["srt://"+input,"udp://" + output])
     srt.stdout.on('data', (data) => {
         console.log(id + `stdout: ${data}`);
       });
@@ -207,8 +245,8 @@ app.get('/status', function (req, res) {
                 srtConfigs.push({
                     mode: "srttoudp",
                     id: id,
-                    process: newUdpToSrt(id,input,output),
-                    input: inout,
+                    process: newSrtToUdp(id,input,output),
+                    input: input,
                     outout: output,
                     status: 1,
                     log: "",
@@ -233,9 +271,25 @@ app.get('/status', function (req, res) {
     res.send(JSON.stringify(toSend))
 })
     
+app.get('/interfaces', (req, res) => {
+    res.send(JSON.stringify(getInterfaces()))
+})
 
-app.listen(80, function () {
-      console.log('Example app listening on port 80!')
+app.get('/sessions', (req, res) => {
+    let time = 10
+    if(req.query.interface) {
+        chooseInterface(req.query.interface)
+        time = 30000
+    }
+    setTimeout(() => {
+        let out = []
+        sdpCollections.forEach(c => out.push(c.sdp))
+        res.send(JSON.stringify(out))
+    },time)
+})
+
+app.listen(8045, function () {
+      console.log('listening on port 8045!')
 })
     
 app.use('/', express.static(__dirname + '/html'));

@@ -1,6 +1,38 @@
+
 let ctttt = 0
+
+var post = (uri,payload) => {
+    return Promise((resolve, reject) => {
+        fetch(uri, {
+            method: 'post',
+            body: payload
+          }).then(function(response) {
+            return response.text();
+          }).then(function(data) {
+            return resolve(data)
+          });
+    })
+  }
+
+
+var getRequest = (uri) => {
+    return new Promise((resolve, reject) => {
+        fetch(uri)
+        .then(function(response) {
+            return response.blob()
+        })
+        .then(function(response) {
+            return response.text()
+        })
+        .then(resolve)
+        .catch(reject)
+
+        setTimeout(() => resolve(""),1000)
+    })
+}
+
 var getme = (uri,reask) => {
-    ctttt++
+    //console.log(uri)
     let contIn = document.getElementById("container")
     fetch(uri)
     .then(function(response) {
@@ -10,13 +42,29 @@ var getme = (uri,reask) => {
         return response.text()
     })
     .then(function (blob) {
-        console.log(blob)
+        //console.log(blob)
         document.getElementById("debug").innerHTML = blob
         let X = JSON.parse(blob)
-        console.log(X)
+        //console.log(X)
 
         let plus = document.getElementById("pluselem") 
-        if(plus) plus.outerHTML = ""
+        if(!plus) {
+            plus = document.createElement("div")
+            plus.innerHTML = "+ receive a new stream (rst -> rtp)"
+            plus.className = "backup-config-container"
+            plus.id = "pluselem"
+            plus.onclick = overRstRtp
+            contIn.append(plus)
+        }
+        let plus2 = document.getElementById("pluselem2") 
+        if(!plus2) {
+            plus2 = document.createElement("div")
+            plus2.innerHTML = "+ send a new stream (rtp -> rst)"
+            plus2.className = "backup-config-container"
+            plus2.id = "pluselem2"
+            plus2.onclick = overRtpRst
+            contIn.append(plus2)
+        }
 
         X.forEach(element => {
             let E = document.getElementById("container-" + element.id)
@@ -28,14 +76,9 @@ var getme = (uri,reask) => {
             }
             E.innerHTML = ""
             createSrt(element,E,element)
-            contIn.append(E)
+            contIn.insertBefore(E,plus)
         });
-        plus = document.createElement("div")
-        plus.innerHTML = "+ add a new backup configuration"
-        plus.className = "backup-config-container"
-        plus.id = "pluselem"
-        plus.onclick = () => getme("status?add=1")
-        //contIn.append(plus)
+        
     });
     if(reask)
         setTimeout(() => getme(uri,reask),2000)
@@ -51,24 +94,43 @@ let states = {}
 var createSrt = (B,container,data) => {
     // Create list of options for devices
     let x = document.createElement("div")
-    if(data.source_state)
-        x.innerHTML = " Send data to :" + data.source + " (connected)"
-    else
-        x.innerHTML = " Send data to :" + data.source      + " (waiting connection)"
-    if(data.target_state)
-        x.innerHTML  += " ->  Receive data from :" + data.destination + " (connected)"
-    else
-        x.innerHTML  += " ->  Receive data from :" + data.destination + " (waiting connection)"
-    container.appendChild(x)
     container.classList.remove("stopped")
     container.classList.remove("gray")
     container.classList.remove("orange")
-    if(data.status == 0) {
-        container.classList.add("stoped")
-        x.innerHTML = "process has ended"
+    if(data.mode == "srttoudp") {
+        x.innerHTML = data.input + " to " + data.outout
+        if(data.status == 0) {
+            container.classList.add("stoped")
+            x.innerHTML = "process has ended"
+        }
+        else if(!data.source_state ) container.classList.add("orange")
     }
-    else if(!data.source_state &&  !data.target_state) container.classList.add("gray")
-    else if(!data.source_state ||  !data.target_state) container.classList.add("orange")
+    if(data.mode == "udptosrt") {
+        x.innerHTML = data.input + " to " + data.outout
+        if(data.status == 0) {
+            container.classList.add("stoped")
+            x.innerHTML = "process has ended"
+        }
+        else if(!data.target_state ) container.classList.add("orange")
+    }
+    else {
+        if(data.source_state)
+            x.innerHTML = " Send data to :" + data.source + " (connected)"
+        else
+            x.innerHTML = " Send data to :" + data.source      + " (waiting connection)"
+        if(data.target_state)
+            x.innerHTML  += " ->  Receive data from :" + data.destination + " (connected)"
+        else
+            x.innerHTML  += " ->  Receive data from :" + data.destination + " (waiting connection)"
+
+        if(data.status == 0) {
+            container.classList.add("stoped")
+            x.innerHTML = "process has ended"
+        }
+        else if(!data.source_state &&  !data.target_state) container.classList.add("gray")
+        else if(!data.source_state ||  !data.target_state) container.classList.add("orange")
+    }
+    container.appendChild(x)
     let b = document.createElement("div")
     container.appendChild(b)
     let l = document.createElement("div")
@@ -124,4 +186,187 @@ var createInput = (cont,id,text,value) => {
           getme(encodeURI("status?" + text + "=" + input.value))
         }
       });
+}
+
+var overRstRtp = () => {
+    let ov = document.createElement("div")
+    ov.id = "overlay"
+    document.body.append(ov)
+    let ovIn = document.createElement("div")
+    ovIn.id = "overlayBox"
+    ov.append(ovIn)
+
+    let txt = document.createElement("div")
+    txt.innerHTML = "<h1>WAN to Ravenna</h1>"
+    ovIn.append(txt)
+
+    let host = document.createElement("input")
+    host.placeholder = "enter srt source"
+    host.onkeydown = (event) => {
+        if(event.code === 'Enter') {
+            let server = host.value.split(":")[0]
+            let port = host.value.split(":")[1]
+            console.log(server + " ---->  " + port)
+            getRequest("http://" + server + "/status")
+            .then(d => {
+                try {
+                    let J = JSON.parse(d)
+                    r = 0
+                    J.forEach(i => {
+                        if(i.destination == port) {
+                            if(i.target_status) {
+                                console.log("Source is busy")
+                                r = 1
+                            }
+                            else {
+                                console.log("Source is free")
+                                r = 1
+                            }
+                        }
+                    })
+                    if(!r) console.log("Source does not exist")
+                }
+                catch(e) {
+                    console.log("JSON prse error")
+                }
+            })
+            .catch(() => console.log("Error fectiching server status",server))
+        }
+    }
+    ovIn.append(host)
+
+    let multicast = document.createElement("input")
+    multicast.placeholder = "multicast address and port"
+    ovIn.append(multicast)
+
+
+    let sel = document.createElement("select")
+    fetch("/interfaces")
+    .then(function(response) {
+        return response.blob()
+    })
+    .then(function(response) {
+        return response.text()
+    })
+    .then(function (blob) {
+        let ints = JSON.parse(blob)
+        let a = document.createElement("option")
+        a.innerHTML = "choose an interface"
+        sel.append(a)
+        ints.forEach(i => {
+            console.log(i)
+            let a = document.createElement("option")
+            a.value = i.ip
+            a.innerHTML = i.name + ":" + i.ip
+            sel.append(a)
+        })
+        ovIn.append(sel)
+    })
+
+
+
+    let cancel = document.createElement("div")
+    cancel.innerHTML = "cancel"
+    cancel.id = "cancelBtn"
+    cancel.onclick = () => ov.outerHTML = ""
+    ovIn.append(cancel)
+    let ok = document.createElement("div")
+    ok.innerHTML = "ok"
+    ok.id = "okBtn"
+    ovIn.append(ok)
+
+    ok.onclick = () => {
+        let rst = host.value.split(":")
+        let rtp = multicast.value.split(":")
+        getme("/status?add=3&streamIP="+rtp[0]+"&streamPORT="+rtp[1]+"&adapter="+sel.value+"&host="+rst[0]+"&destination="+rst[1])
+        ov.outerHTML = ""
+    }
+}
+var overRtpRst = () => {
+    let ov = document.createElement("div")
+    ov.id = "overlay"
+    document.body.append(ov)
+    let ovIn = document.createElement("div")
+    ovIn.id = "overlayBox"
+    ov.append(ovIn)
+
+    let txt = document.createElement("div")
+    txt.innerHTML = "<h1>Ravenna to WAN</h1>"
+    ovIn.append(txt)
+
+
+    let sel = document.createElement("select")
+    let SDPs = null
+    let sessions = document.createElement("select")
+    fetch("/interfaces")
+    .then(function(response) {
+        return response.blob()
+    })
+    .then(function(response) {
+        return response.text()
+    })
+    .then(function (blob) {
+        let ints = JSON.parse(blob)
+        let a = document.createElement("option")
+        a.innerHTML = "choose an interface"
+        sel.append(a)
+        ints.forEach(i => {
+            console.log(i)
+            let a = document.createElement("option")
+            a.value = i.ip
+            a.innerHTML = i.name + ":" + i.ip
+            sel.append(a)
+        })
+    })
+
+    sel.onchange = () => {
+        console.log(sel.value)
+        fetch("/sessions?interface="+sel.value)
+        .then(function(response) {
+            return response.blob()
+        })
+        .then(function(response) {
+            return response.text()
+        })
+        .then(function (blob) {
+            SDPs = JSON.parse(blob)
+            let a = document.createElement("option")
+            a.innerHTML = "choose an interface"
+            sel.append(a)
+            SDPs.forEach(i => {
+                console.log(i)
+                let a = document.createElement("option")
+                a.value = JSON.stringify(i)
+                a.innerHTML = i.name
+                sessions.append(a)
+            })
+        })
+    }
+
+    ovIn.append(sel)
+    ovIn.append(sessions)
+
+
+    let host = document.createElement("input")
+    host.value = "enter srt destination"
+    ovIn.append(host)
+
+    let cancel = document.createElement("div")
+    cancel.innerHTML = "cancel"
+    cancel.id = "cancelBtn"
+    cancel.onclick = () => ov.outerHTML = ""
+    ovIn.append(cancel)
+    let ok = document.createElement("div")
+    ok.innerHTML = "ok"
+    ok.id = "okBtn"
+    ovIn.append(ok)
+
+    ok.onclick = () => {
+        let rst = host.value.split(":")
+        console.log(sessions.value)
+        let sdp = JSON.parse(sessions.value)
+        let rtp = [sdp.media[0].connection.ip.split("/")[0], sdp.media[0].port]
+        getme("/status?add=2&streamIP="+rtp[0]+"&streamPORT="+rtp[1]+"&adapter="+sel.value+"&host="+rst[0]+"&destination="+rst[1])
+        ov.outerHTML = ""
+    }
 }

@@ -28,6 +28,9 @@ select {
 .orange {
     background: orange;
 }
+.green {
+    background: green;
+}
 
 .del {
     position: absolute;
@@ -68,8 +71,9 @@ select {
     justify-content: center;
     align-items: baseline;
     padding: 10px;
-    width: 200px;
-    height: 250px;
+    width: 400px;
+    height: auto;
+    padding-bottom: 50px;
 }
 
 #overlayBox input {
@@ -92,4 +96,8 @@ select {
     padding: 0 20;
     background: coral;
     cursor: pointer;
+}
+
+.small {
+    font-size: 0.7em;
 }

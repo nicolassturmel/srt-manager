@@ -2,21 +2,23 @@
 let ctttt = 0
 
 var post = (uri,payload) => {
-    return Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         fetch(uri, {
             method: 'post',
             body: payload
           }).then(function(response) {
+            return response.blob()
+          }).then(function(response) {
             return response.text();
-          }).then(function(data) {
-            return resolve(data)
-          });
+          }).then(resolve)
+          .catch(reject)
     })
   }
 
 
 var getRequest = (uri) => {
     return new Promise((resolve, reject) => {
+        console.log("GET ",uri)
         fetch(uri)
         .then(function(response) {
             return response.blob()
@@ -214,17 +216,23 @@ var overRstRtp = () => {
                     r = 0
                     J.forEach(i => {
                         if(i.destination == port) {
-                            if(i.target_status) {
+                            if(i.target_state) {
                                 console.log("Source is busy")
+                                host.className = "orange"
                                 r = 1
                             }
                             else {
                                 console.log("Source is free")
+                                host.className = "green"
+                                getRequest("http://" + server + "/sdp?port=" + port,(data) => SDP.innerHTML = data)
                                 r = 1
                             }
                         }
                     })
-                    if(!r) console.log("Source does not exist")
+                    if(!r) { 
+                        console.log("Source does not exist")
+                        host.className = "stoped"
+                    }
                 }
                 catch(e) {
                     console.log("JSON prse error")
@@ -234,6 +242,10 @@ var overRstRtp = () => {
         }
     }
     ovIn.append(host)
+
+    let SDP = document.createElement("div")
+    SDP.className = "small"
+    ovIn.append(SDP)
 
     let multicast = document.createElement("input")
     multicast.placeholder = "multicast address and port"
@@ -319,6 +331,7 @@ var overRtpRst = () => {
         })
     })
 
+
     sel.onchange = () => {
         console.log(sel.value)
         fetch("/sessions?interface="+sel.value)
@@ -330,9 +343,6 @@ var overRtpRst = () => {
         })
         .then(function (blob) {
             SDPs = JSON.parse(blob)
-            let a = document.createElement("option")
-            a.innerHTML = "choose an interface"
-            sel.append(a)
             SDPs.forEach(i => {
                 console.log(i)
                 let a = document.createElement("option")
@@ -342,13 +352,54 @@ var overRtpRst = () => {
             })
         })
     }
+    sessions.onchange = () => SDP.innerHTML = JSON.parse(sessions.value).raw.replace(/\n/g,"<br>")
 
+    let SDP = document.createElement("div")
+    SDP.className = "small"
     ovIn.append(sel)
     ovIn.append(sessions)
+    ovIn.append(SDP)
 
 
     let host = document.createElement("input")
-    host.value = "enter srt destination"
+    host.placeholder = "enter srt destination"
+    host.onkeydown = (event) => {
+        if(event.code === 'Enter') {
+            let server = host.value.split(":")[0]
+            let port = host.value.split(":")[1]
+            console.log(server + " ---->  " + port)
+            getRequest("http://" + server + "/status")
+            .then(d => {
+                try {
+                    let J = JSON.parse(d)
+                    r = 0
+                    J.forEach(i => {
+                        if(i.source == port) {
+                            console.log(i)
+                            if(i.source_state) {
+                                console.log("Source is busy")
+                                host.className = "orange"
+                                r = 1
+                            }
+                            else {
+                                console.log("Source is free")
+                                host.className = "green"
+                                r = 1
+                            }
+                        }
+                    })
+                    if(!r) { 
+                        console.log("Source does not exist")
+                        host.className = "stoped"
+                    }
+                }
+                catch(e) {
+                    console.log("JSON prse error")
+                }
+            })
+            .catch(() => console.log("Error fectiching server status",server))
+        }
+    }
     ovIn.append(host)
 
     let cancel = document.createElement("div")
@@ -366,6 +417,10 @@ var overRtpRst = () => {
         console.log(sessions.value)
         let sdp = JSON.parse(sessions.value)
         let rtp = [sdp.media[0].connection.ip.split("/")[0], sdp.media[0].port]
+
+        let server = host.value.split(":")[0]
+        let port = host.value.split(":")[1]
+        post("http://" + server + "/sdp?port=" + port,JSON.parse(sessions.value).raw,(d) => console.log(d)).then(() => {})
         getme("/status?add=2&streamIP="+rtp[0]+"&streamPORT="+rtp[1]+"&adapter="+sel.value+"&host="+rst[0]+"&destination="+rst[1])
         ov.outerHTML = ""
     }

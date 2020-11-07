@@ -33,6 +33,7 @@ function getSAP(host) {
 
   clientSAP.on('message', function (message, remote) {
     let sdp = sdpTransform.parse(message.toString().split("application/sdp")[1])
+    sdp.raw = message.toString().split("application/sdp")[1]
     let timer = setTimeout( () => {
       removeSdp(sdp.name)
     } , 45000)

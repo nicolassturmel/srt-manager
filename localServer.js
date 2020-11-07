@@ -60,7 +60,7 @@ function getSAP(host) {
 
 var chooseInterface = (add) => {
     sdpCollections.forEach((id) => {
-        sendSDP(id.sdp,"remove")
+        
     })
     sdpCollections = []
     getSAP(add)
@@ -150,7 +150,53 @@ var newSrtToUdp = (id,input,output) => {
                 case "Accepted SRT target connection":
                     sss[0].target_state = true;
                     break;
-                case "Accepted SRT source connection":
+                case "SRT source connected":
+                    sss[0].source_state = true;
+                    break;
+                case "SRT target disconnected":
+                    sss[0].target_state = false;
+                    break;
+                case "SRT source disconnected":
+                    sss[0].source_state = false;
+                    break;
+                default:
+                    break
+            }
+
+        }
+      });
+
+      srt.on('exit',() => {
+        let sss = srtConfigs.filter((s) => s.id == id)
+        if(sss.length == 1) {
+            sss[0].status = 0
+        }
+      })
+    return srt
+}
+
+
+var newUdpToSrt = (id,input,output) => {
+    let srt = spawn("srt-live-transmit",["udp://"+input,"srt://" + output])
+    srt.stdout.on('data', (data) => {
+        console.log(id + `stdout: ${data}`);
+      });
+    
+      srt.stderr.on('data', (data) => {
+        console.log(id + `stderr: ${data}`);
+        let sss = srtConfigs.filter((s) => s.id == id)
+        if(sss.length == 1 && data) {
+            let str = "" + `${data}`
+            sss[0].log += str.replace(/\n/g,"<br>")
+
+            let lasts = sss[0].log.split("<br>")
+            let last = lasts[lasts.length-2]
+            console.log("----> " + last)
+            switch(last) {
+                case "SRT target connected":
+                    sss[0].target_state = true;
+                    break;
+                case "SRT source connected":
                     sss[0].source_state = true;
                     break;
                 case "SRT target disconnected":
@@ -228,7 +274,7 @@ app.get('/status', function (req, res) {
                     mode: "udptosrt",
                     id: id,
                     process: newUdpToSrt(id,input,output),
-                    input: inout,
+                    input: input,
                     outout: output,
                     status: 1,
                     log: "",

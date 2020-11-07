@@ -65,7 +65,26 @@ app.get('/', function (req, res) {
     res.send('<div id=root>ROOT</div>')
   })
 
+app.get('/sdp', (req,res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    if(req.query && req.query.port) {
+        let port = req.query.port
+        srtConfigs.forEach(i => {
+            if(i.status != 1) return
+            if(port == i.source) {
+                // Putting a new SDP in
+                i.sdp = req.body
+            }
+            else if(port == i.destination) {
+                // Sending the SDP
+                res.send(i.sdp)
+            }
+        })
+    }
+})
+
 app.get('/status', function (req, res) {
+    res.header('Access-Control-Allow-Origin', '*');
     let Errors = []
     if(req.query) {
         console.log(JSON.stringify(req.query))

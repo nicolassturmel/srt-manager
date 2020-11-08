@@ -26,7 +26,10 @@ var getRequest = (uri) => {
         .then(function(response) {
             return response.text()
         })
-        .then(resolve)
+        .then(data => {
+            console.log(data)
+            resolve(data)
+        })
         .catch(reject)
 
         setTimeout(() => resolve(""),1000)
@@ -224,7 +227,11 @@ var overRstRtp = () => {
                             else {
                                 console.log("Source is free")
                                 host.className = "green"
-                                getRequest("http://" + server + "/sdp?port=" + port,(data) => SDP.innerHTML = data)
+                                console.log("Getting sdp")
+                                getRequest("http://" + server + "/sdp?port=" + port).then((data) => {
+                                    console.log(data)
+                                    SDP.innerHTML = data.replace(/\n/g,"<br>")
+                                })
                                 r = 1
                             }
                         }
@@ -291,6 +298,7 @@ var overRstRtp = () => {
         let rst = host.value.split(":")
         let rtp = multicast.value.split(":")
         getme("/status?add=3&streamIP="+rtp[0]+"&streamPORT="+rtp[1]+"&adapter="+sel.value+"&host="+rst[0]+"&destination="+rst[1])
+        post("sdp?id=" + host,JSON.parse(sessions.value).raw,(d) => console.log(d)).then(() => {})
         ov.outerHTML = ""
     }
 }

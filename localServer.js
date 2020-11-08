@@ -5,6 +5,7 @@ const os = require('os');
 var dgram = require('dgram'); 
 const sdpTransform = require('sdp-transform');
 const http = require('http')
+const ipInt = require('ip-to-int');
 let sdpCollections = []
 var clientSAP = null
 
@@ -64,11 +65,43 @@ setInterval(() => {
                     let Header = Buffer.alloc(8)
                     Header.writeInt8(32,0)
                     Header.writeInt8(0x00,1)
-                    Header.writeUInt32BE(port,2)
+                    Header.writeUInt16BE(port,2)
 
+
+                    let elems = i.destination.split("?interface=")
+                    let host = elems[1]
+                    let mdst = elems[0].split(":")[0]
+                    let mport = elems[0].split(":")[1]
+
+
+                    Header.writeUInt32BE(ipInt(host).toInt(),4)
+
+                    if(data) {
+                        let lines = data.split("\r\n")
+
+                        lines.forEach((v, i) => {
+                            // Changing dst address
+                            if(v.startsWith("c=IN IP4")) 
+                                lines[i] = "c=IN IP4 " + mdst + "/1"
+                            // Changing dst port
+                            if(v.startsWith("m=audio"))
+                                lines[i] = "m=audio " + mport + "RTP/AVP" + v.split("RTP/AVP")[1]
+
+                            // Changing source address
+                            if(v.startsWith("o="))
+                                lines[i] = v.split("IP4")[0] + "IP4 " + host
+                            if(v.startsWith("a=source-filter: incl IN IP4"))
+                                lines[i] = "a=source-filter: incl IN IP4 " + mdst + " " + host
+
+                            // Insert stream name suffix
+                            if(v.startsWith("s="))
+                                lines[i] += "-SRT:" + port
+                        })
+
+                        data = lines.join("\r\n")
+                    }
                     let Msg = Buffer.concat([Header, Buffer.from("application/sdp"), Buffer.from(data || "missing")])
 
-                    let host = i.destination.split("interface=")[1]
                     if(SendSockets[host]) SendSockets[host].send(Msg, 0 , Msg.length, 9875, "239.255.255.255", () => console.log("Sent message"))
                     else console.log("No socket for ",host)
                 })
@@ -78,7 +111,7 @@ setInterval(() => {
             
         }
     })
-},2000)
+},15000)
 
 function getSAP(host) {
   if(clientSAP) clientSAP.close()
@@ -457,7 +490,7 @@ srtConfigs.push({
     process: null,
     input: "18.193.110.254:35142",
     source: "",
-    destination: "destination?interface=192.168.1.162",
+    destination: "239.55.55.55:5010?interface=192.168.1.162",
     status: 1,
     log: "",
     source_state: false,

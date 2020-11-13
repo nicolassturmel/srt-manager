@@ -4,11 +4,115 @@ const { spawn } = require('child_process');
 const os = require('os');
 var dgram = require('dgram'); 
 const sdpTransform = require('sdp-transform');
-
+const http = require('http')
+const ipInt = require('ip-to-int');
 let sdpCollections = []
 var clientSAP = null
 
 let selectedDevice = null;
+let SendSockets = []
+var getInterfaces = () => {
+    var netInt = os.networkInterfaces()
+    let addresses = []
+    Object.keys(netInt).forEach(i => {
+        let ip4 = netInt[i].filter(k => k.family == "IPv4")
+        if(ip4.length > 0)
+        ip4.forEach(p => {
+            addresses.push({
+            name: i,
+            ip: p.address,
+            mask: p.netmask,
+            selected: selectedDevice==p.address
+            })
+        })
+    })
+    return addresses
+}
+
+let madd = '239.255.255.255'
+let port = 9875
+
+getInterfaces().forEach(i => {
+    console.log("One interface",i.ip)
+    let host = i.ip
+    SendSockets[host] = dgram.createSocket({ type: "udp4", reuseAddr: true });
+
+    SendSockets[host].on('listening', function () {
+        console.log('UDP Client listening on ' + madd + ":" + port + " from " + host);
+        SendSockets[host].setBroadcast(true)
+        SendSockets[host].setMulticastTTL(12); 
+        SendSockets[host].addMembership(madd,host);
+    });
+
+    SendSockets[host].bind(port,host);
+})
+
+
+setInterval(() => {
+    // Sends SAP announces
+    srtConfigs.forEach(i => {
+        //console.log("testing",i)
+        if(i.mode == "srttoudp") {
+            let server = i.input.split(":")[0]
+            let port = i.input.split(":")[1]
+            http.get("http://" + server + "/sdp?port=" + port, res => {
+                console.log(`statusCode: ${res.statusCode}`)
+                let data=""
+                res.on('data', d => {
+                    data+=d
+                })
+                res.on('end', () => {
+                    let Header = Buffer.alloc(8)
+                    Header.writeInt8(32,0)
+                    Header.writeInt8(0x00,1)
+                    Header.writeUInt16BE(port,2)
+
+
+                    let elems = i.destination.split("?interface=")
+                    let host = elems[1]
+                    let mdst = elems[0].split(":")[0]
+                    let mport = elems[0].split(":")[1]
+
+
+                    Header.writeUInt32BE(ipInt(host).toInt(),4)
+
+                    if(data) {
+                        let lines = data.split("\r\n")
+
+                        lines.forEach((v, i) => {
+                            // Changing dst address
+                            if(v.startsWith("c=IN IP4")) 
+                                lines[i] = "c=IN IP4 " + mdst + "/1"
+                            // Changing dst port
+                            if(v.startsWith("m=audio"))
+                                lines[i] = "m=audio " + mport + "RTP/AVP" + v.split("RTP/AVP")[1]
+
+                            // Changing source address
+                            if(v.startsWith("o="))
+                                lines[i] = v.split("IP4")[0] + "IP4 " + host
+                            if(v.startsWith("a=source-filter: incl IN IP4"))
+                                lines[i] = "a=source-filter: incl IN IP4 " + mdst + " " + host
+
+                            // Insert stream name suffix
+                            if(v.startsWith("s="))
+                                lines[i] += "-SRT:" + port
+                        })
+
+                        data = lines.join("\r\n")
+                    }
+                    let Msg = Buffer.concat([Header, Buffer.from("application/sdp"), Buffer.from(data || "missing")])
+
+                    if(SendSockets[host]) SendSockets[host].send(Msg, 0 , Msg.length, 9875, "239.255.255.255", () => console.log("Sent message"))
+                    else console.log("No socket for ",host)
+                })
+            })
+
+
+            
+        }
+    })
+},15000)
+
 function getSAP(host) {
   if(clientSAP) clientSAP.close()
 
@@ -32,7 +136,9 @@ function getSAP(host) {
   }
 
   clientSAP.on('message', function (message, remote) {
+    console.log(message.toString())
     let sdp = sdpTransform.parse(message.toString().split("application/sdp")[1])
+    sdp.raw = message.toString().split("application/sdp")[1]
     let timer = setTimeout( () => {
       removeSdp(sdp.name)
     } , 45000)
@@ -234,6 +340,10 @@ var srtConfigs = []
 
 const express = require('express')
 const app = express()
+const bodyParser = require('body-parser');
+
+
+app.use(bodyParser.text());
 
 app.get('/', function (req, res) {
     res.send('<div id=root>ROOT</div>')
@@ -334,6 +444,23 @@ app.get('/sessions', (req, res) => {
     },time)
 })
 
+app.post('/sdp', (req,res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    if(req.query && req.query.id) {
+        let id = req.query.id
+        srtConfigs.forEach(i => {
+            console.log(i.status,i.id)
+            if(i.status != 1) return
+            if(id == i.input) {
+                // Putting a new SDP in
+                console.log(req.body)
+                i.sdp = req.body
+                res.send(i.sdp)
+            }
+        })
+    }
+})
+
 app.listen(8045, function () {
       console.log('listening on port 8045!')
 })
@@ -356,10 +483,16 @@ let manualPush = (host,source,destination) => {
     })  
 }
 
-manualPush("",35001,35002)
-manualPush("",35101,35102)
-manualPush("",35111,35112)
-manualPush("",35121,35122)
-manualPush("",35131,35132)
-manualPush("",35141,35142)
-manualPush("",35151,35152)
+
+srtConfigs.push({
+    mode: "srttoudp",
+    id: 89,
+    process: null,
+    input: "18.193.110.254:35142",
+    source: "",
+    destination: "239.55.55.55:5010?interface=192.168.1.162",
+    status: 1,
+    log: "",
+    source_state: false,
+    target_state: false
+})  

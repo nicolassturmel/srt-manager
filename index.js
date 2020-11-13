@@ -60,10 +60,32 @@ var srtConfigs = []
 
 const express = require('express')
 const app = express()
+const bodyParser = require('body-parser');
+
+
+app.use(bodyParser.text());
+
 
 app.get('/', function (req, res) {
     res.send('<div id=root>ROOT</div>')
   })
+
+app.post('/sdp', (req,res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    if(req.query && req.query.port) {
+        let port = req.query.port
+        srtConfigs.forEach(i => {
+            console.log(i.status,i.source)
+            if(i.status != 1) return
+            if(port == i.source) {
+                // Putting a new SDP in
+                console.log(req.body)
+                i.sdp = req.body
+                res.send(i.sdp)
+            }
+        })
+    }
+})
 
 app.get('/sdp', (req,res) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -71,11 +93,7 @@ app.get('/sdp', (req,res) => {
         let port = req.query.port
         srtConfigs.forEach(i => {
             if(i.status != 1) return
-            if(port == i.source) {
-                // Putting a new SDP in
-                i.sdp = req.body
-            }
-            else if(port == i.destination) {
+            if(port == i.destination) {
                 // Sending the SDP
                 res.send(i.sdp)
             }

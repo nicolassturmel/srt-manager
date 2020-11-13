@@ -95,9 +95,8 @@ var getme = (uri,reask) => {
         let existingElements = contIn.children;
         for(let c = 0; c < existingElements.length ; c++) {
             if(existingElements[c].id.startsWith("container")) {
-                console.log(existingElements[c].id.split("-")[1])
                 if(X.some(u => u.id == existingElements[c].id.split("-")[1]))
-                    console.log("found")
+                    {}
                 else
                     existingElements[c].outerHTML = ""
             }
@@ -153,7 +152,6 @@ var createSrt = (B,container,data) => {
         else if(!data.source_state &&  !data.target_state) container.classList.add("gray")
         else if(!data.source_state ||  !data.target_state) container.classList.add("orange")
     }
-    console.log(data)
     if(data.passphrase)
         x.innerHTML += "<br>!! This stream is encrypted"
     container.appendChild(x)

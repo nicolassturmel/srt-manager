@@ -2,8 +2,17 @@
 
 const { spawn } = require('child_process');
 
-var newSrtPingPong = (id,srcHost,srcPort,localPort) => {
-    let srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort,"srt://:" + localPort])
+var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
+    let srt
+    if(passphrase) {
+        if(passphrase.length < 10)
+            passphrase = passphrase.padStart(10,'0')
+        console.log("passphrase: " + passphrase)
+        srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort+"?passphrase="+passphrase+"&enforcedencryption=true","srt://:" + localPort+"?passphrase="+passphrase+"&enforcedencryption=true"])}
+    else {
+        console.log("no passprase")
+        srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort,"srt://:" + localPort])
+    }
     srt.stdout.on('data', (data) => {
         console.log(id + `stdout: ${data}`);
       });
@@ -60,10 +69,33 @@ var srtConfigs = []
 
 const express = require('express')
 const app = express()
+const bodyParser = require('body-parser');
+const { kill } = require('process');
+
+
+app.use(bodyParser.text());
+
 
 app.get('/', function (req, res) {
     res.send('<div id=root>ROOT</div>')
   })
+
+app.post('/sdp', (req,res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    if(req.query && req.query.port) {
+        let port = req.query.port
+        srtConfigs.forEach(i => {
+            console.log(i.status,i.source)
+            if(i.status != 1) return
+            if(port == i.source) {
+                // Putting a new SDP in
+                console.log(req.body)
+                i.sdp = req.body
+                res.send(i.sdp)
+            }
+        })
+    }
+})
 
 app.get('/sdp', (req,res) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -71,11 +103,7 @@ app.get('/sdp', (req,res) => {
         let port = req.query.port
         srtConfigs.forEach(i => {
             if(i.status != 1) return
-            if(port == i.source) {
-                // Putting a new SDP in
-                i.sdp = req.body
-            }
-            else if(port == i.destination) {
+            if(port == i.destination) {
                 // Sending the SDP
                 res.send(i.sdp)
             }
@@ -94,18 +122,20 @@ app.get('/status', function (req, res) {
                 let host = req.query.host
                 let source = req.query.source
                 let destination = req.query.destination
+                let passphrase = req.query.passphrase 
 
                 srtConfigs.push({
                     mode: "pingpong",
                     id: id,
-                    process: newSrtPingPong(id,host,source,destination),
+                    process: newSrtPingPong(id,host,source,destination,passphrase),
                     host: host,
                     source: source,
                     destination: destination,
                     status: 1,
                     log: "",
                     source_state: false,
-                    target_state: false
+                    target_state: false,
+                    passphrase: passphrase? true : false
                 })  
             }
         }
@@ -146,9 +176,11 @@ app.get('/status', function (req, res) {
             }
         }
         if(req.query.del) {
-            if(CST.BackupConfig.some(b => b.Id == parseInt(req.query.del))) {
-                let idx = CST.BackupConfig.findIndex( (b) => b.Id == parseInt(req.query.del) )
-                CST.BackupConfig.splice(idx,1)
+            let item = srtConfigs.filter(e => e.id == req.query.del)[0]
+            if(item) {
+                item.process.kill()
+                let id = srtConfigs.findIndex(e => e.id == item.id)
+                srtConfigs.splice(id,1)
             }
             else Errors.push("Did not find Id to delete")
         }

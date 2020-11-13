@@ -70,6 +70,15 @@ var getme = (uri,reask) => {
             plus2.onclick = overRtpRst
             contIn.append(plus2)
         }
+        let plus3 = document.getElementById("pluselem3") 
+        if(!plus3) {
+            plus3 = document.createElement("div")
+            plus3.innerHTML = "+ relay"
+            plus3.className = "backup-config-container"
+            plus3.id = "pluselem3"
+            plus3.onclick = rstRelay
+            contIn.append(plus3)
+        }
 
         X.forEach(element => {
             let E = document.getElementById("container-" + element.id)
@@ -83,7 +92,15 @@ var getme = (uri,reask) => {
             createSrt(element,E,element)
             contIn.insertBefore(E,plus)
         });
-        
+        let existingElements = contIn.children;
+        for(let c = 0; c < existingElements.length ; c++) {
+            if(existingElements[c].id.startsWith("container")) {
+                if(X.some(u => u.id == existingElements[c].id.split("-")[1]))
+                    {}
+                else
+                    existingElements[c].outerHTML = ""
+            }
+        }
     });
     if(reask)
         setTimeout(() => getme(uri,reask),2000)
@@ -136,6 +153,8 @@ var createSrt = (B,container,data) => {
         else if(!data.source_state &&  !data.target_state) container.classList.add("gray")
         else if(!data.source_state ||  !data.target_state) container.classList.add("orange")
     }
+    if(data.passphrase)
+        x.innerHTML += "<br>!! This stream is encrypted"
     container.appendChild(x)
     let b = document.createElement("div")
     container.appendChild(b)
@@ -168,6 +187,12 @@ var createSrt = (B,container,data) => {
         states[data.id] = "hidden"
         l.className = states[data.id]
     }
+
+    let cross = document.createElement("cross")
+    cross.className = "cross"
+    cross.innerHTML = "X"
+    cross.onclick = () => getme("/status?del=" + data.id)
+    container.appendChild(cross)
 }
 
 var createInput = (cont,id,text,value) => {
@@ -192,6 +217,47 @@ var createInput = (cont,id,text,value) => {
           getme(encodeURI("status?" + text + "=" + input.value))
         }
       });
+}
+
+var rstRelay = () => {
+    let ov = document.createElement("div")
+    ov.id = "overlay"
+    document.body.append(ov)
+    let ovIn = document.createElement("div")
+    ovIn.id = "overlayBox"
+    ov.append(ovIn)
+
+    let txt = document.createElement("div")
+    txt.innerHTML = "<h1>New Rst relay</h1>"
+    ovIn.append(txt)
+
+    let portA = document.createElement("input")
+    portA.placeholder = "input port number"
+    let portB = document.createElement("input")
+    portB.placeholder = "output port number"
+    let passphrase = document.createElement("input")
+    passphrase.placeholder = "enter passprase"
+
+    ovIn.append(portA)
+    ovIn.append(portB)
+    ovIn.append(passphrase)
+
+
+    let cancel = document.createElement("div")
+    cancel.innerHTML = "cancel"
+    cancel.id = "cancelBtn"
+    cancel.onclick = () => ov.outerHTML = ""
+    ovIn.append(cancel)
+    let ok = document.createElement("div")
+    ok.innerHTML = "ok"
+    ok.id = "okBtn"
+    ovIn.append(ok)
+
+    ok.onclick = () => {
+        getme("/status?add=1&host=&source="+portA.value+"&destination="+portB.value+"&passphrase="+passphrase.value)
+        ov.outerHTML = ""
+    }
+
 }
 
 var overRstRtp = () => {

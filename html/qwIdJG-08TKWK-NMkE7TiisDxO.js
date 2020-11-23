@@ -119,6 +119,7 @@ var createSrt = (B,container,data) => {
     container.classList.remove("stopped")
     container.classList.remove("gray")
     container.classList.remove("orange")
+    console.log(data.mode)
     if(data.mode == "srttoudp") {
         x.innerHTML = data.input + " to " + data.outout
         if(data.status == 0) {
@@ -127,7 +128,7 @@ var createSrt = (B,container,data) => {
         }
         else if(!data.source_state ) container.classList.add("orange")
     }
-    if(data.mode == "udptosrt") {
+    else if(data.mode == "udptosrt") {
         x.innerHTML = data.input + " to " + data.outout
         if(data.status == 0) {
             container.classList.add("stoped")
@@ -270,7 +271,7 @@ var overRstRtp = () => {
     let txt = document.createElement("div")
     txt.innerHTML = "<h1>WAN to Ravenna</h1>"
     ovIn.append(txt)
-
+    let SDPdata = ""
     let host = document.createElement("input")
     host.placeholder = "enter srt source"
     host.onkeydown = (event) => {
@@ -296,7 +297,8 @@ var overRstRtp = () => {
                                 console.log("Getting sdp")
                                 getRequest("http://" + server + "/sdp?port=" + port).then((data) => {
                                     console.log(data)
-                                    SDP.innerHTML = data.replace(/\n/g,"<br>")
+                                    SDP.innerHTML =  "<h3>The SDP will be updated and available through SAP</h3><br>" + data.replace(/\n/g,"<br>")
+                                    SDPdata = data
                                 })
                                 r = 1
                             }
@@ -364,7 +366,6 @@ var overRstRtp = () => {
         let rst = host.value.split(":")
         let rtp = multicast.value.split(":")
         getme("/status?add=3&streamIP="+rtp[0]+"&streamPORT="+rtp[1]+"&adapter="+sel.value+"&host="+rst[0]+"&destination="+rst[1])
-        post("sdp?id=" + host,JSON.parse(sessions.value).raw,(d) => console.log(d)).then(() => {})
         ov.outerHTML = ""
     }
 }

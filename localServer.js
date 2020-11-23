@@ -67,11 +67,11 @@ setInterval(() => {
                     Header.writeInt8(0x00,1)
                     Header.writeUInt16BE(port,2)
 
-
-                    let elems = i.destination.split("?interface=")
+                    console.log(i)
+                    let elems = i.outout.split("?adapter=")
                     let host = elems[1]
                     let mdst = elems[0].split(":")[0]
-                    let mport = elems[0].split(":")[1]
+                    let mport = elems[0].split(":")[1] || 5004
 
 
                     Header.writeUInt32BE(ipInt(host).toInt(),4)
@@ -85,7 +85,7 @@ setInterval(() => {
                                 lines[i] = "c=IN IP4 " + mdst + "/1"
                             // Changing dst port
                             if(v.startsWith("m=audio"))
-                                lines[i] = "m=audio " + mport + "RTP/AVP" + v.split("RTP/AVP")[1]
+                                lines[i] = "m=audio " + mport + " RTP/AVP" + v.split("RTP/AVP")[1]
 
                             // Changing source address
                             if(v.startsWith("o="))
@@ -482,17 +482,4 @@ let manualPush = (host,source,destination) => {
         target_state: false
     })  
 }
-
-
-srtConfigs.push({
-    mode: "srttoudp",
-    id: 89,
-    process: null,
-    input: "18.193.110.254:35142",
-    source: "",
-    destination: "239.55.55.55:5010?interface=192.168.1.162",
-    status: 1,
-    log: "",
-    source_state: false,
-    target_state: false
-})  
+  

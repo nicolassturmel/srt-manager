@@ -55,7 +55,7 @@ var getme = (uri,reask) => {
         let plus = document.getElementById("pluselem") 
         if(!plus) {
             plus = document.createElement("div")
-            plus.innerHTML = "+ receive a new stream (rst -> rtp)"
+            plus.innerHTML = "+ receive a new stream (srt -> rtp)"
             plus.className = "backup-config-container"
             plus.id = "pluselem"
             plus.onclick = overRstRtp
@@ -64,7 +64,7 @@ var getme = (uri,reask) => {
         let plus2 = document.getElementById("pluselem2") 
         if(!plus2) {
             plus2 = document.createElement("div")
-            plus2.innerHTML = "+ send a new stream (rtp -> rst)"
+            plus2.innerHTML = "+ send a new stream (rtp -> srt)"
             plus2.className = "backup-config-container"
             plus2.id = "pluselem2"
             plus2.onclick = overRtpRst
@@ -227,7 +227,7 @@ var rstRelay = () => {
     ov.append(ovIn)
 
     let txt = document.createElement("div")
-    txt.innerHTML = "<h1>New Rst relay</h1>"
+    txt.innerHTML = "<h1>New SRT relay</h1>"
     ovIn.append(txt)
 
     let portA = document.createElement("input")

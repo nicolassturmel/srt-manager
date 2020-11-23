@@ -11,14 +11,14 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
         srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort+"?passphrase="+passphrase+"&enforcedencryption=true","srt://:" + localPort+"?passphrase="+passphrase+"&enforcedencryption=true"])}
     else {
         console.log("no passprase")
-        srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort,"srt://:" + localPort])
+        srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort+"?rcvlatency=200","srt://:" + localPort])
     }
     srt.stdout.on('data', (data) => {
-        console.log(id + `stdout: ${data}`);
+        console.log(id + ` stdout: ${data}`);
       });
     
       srt.stderr.on('data', (data) => {
-        console.log(id + `stderr: ${data}`);
+        console.log(id + ` `+ localPort + " " + srcPort + " " + "stderr: ${data}");
         let sss = srtConfigs.filter((s) => s.id == id)
         if(sss.length == 1 && data) {
             let str = "" + `${data}`
@@ -128,6 +128,7 @@ app.get('/status', function (req, res) {
                     mode: "pingpong",
                     id: id,
                     process: newSrtPingPong(id,host,source,destination,passphrase),
+                    name: req.name,
                     host: host,
                     source: source,
                     destination: destination,
@@ -201,7 +202,7 @@ app.listen(80, function () {
     
 app.use('/', express.static(__dirname + '/html'));
 
-let manualPush = (host,source,destination) => {
+let manualPush = (host,source,destination,name) => {
     let id = g_id++
     srtConfigs.push({
         mode: "pingpong",
@@ -209,6 +210,7 @@ let manualPush = (host,source,destination) => {
         process: newSrtPingPong(id,host,source,destination),
         host: host,
         source: source,
+        name: name,
         destination: destination,
         status: 1,
         log: "",
@@ -217,10 +219,10 @@ let manualPush = (host,source,destination) => {
     })  
 }
 
-manualPush("",35001,35002)
-manualPush("",35101,35102)
-manualPush("",35111,35112)
-manualPush("",35121,35122)
-manualPush("",35131,35132)
-manualPush("",35141,35142)
-manualPush("",35151,35152)
+manualPush("",35001,35002,"no  name")
+manualPush("",35101,35102,"no  name")
+manualPush("",35111,35112,"ROSS test")
+manualPush("",35121,35122,"no  name")
+manualPush("",35131,35132,"no  name")
+manualPush("",35141,35142,"no  name")
+manualPush("",35151,35152,"Pyramix NSL")

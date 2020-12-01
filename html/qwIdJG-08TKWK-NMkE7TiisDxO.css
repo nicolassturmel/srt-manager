@@ -110,3 +110,9 @@ select {
 .small {
     font-size: 0.7em;
 }
+
+.name {
+    width: 100%;
+    text-align: center;
+    padding: 2px;
+}

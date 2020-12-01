@@ -43,7 +43,10 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
                 default:
                     break
             }
-
+            if(lasts.length > 100) {
+                lasts[10] = "---! log has been cut here !---"
+                sss[0].log = lasts.splice(11,lasts.length-90).join("<br>")
+            }
         }
       });
 
@@ -222,7 +225,9 @@ let manualPush = (host,source,destination,name) => {
 manualPush("",35001,35002,"no  name")
 manualPush("",35101,35102,"no  name")
 manualPush("",35111,35112,"ROSS test")
-manualPush("",35121,35122,"no  name")
-manualPush("",35131,35132,"no  name")
-manualPush("",35141,35142,"no  name")
+manualPush("",35121,35122,"DO test")
+manualPush("",35131,35132,"GDS1")
+manualPush("",35141,35142,"GDS2")
+manualPush("",35123,35124,"GDS3")
+manualPush("",35133,35134,"GDS4")
 manualPush("",35151,35152,"Pyramix NSL")

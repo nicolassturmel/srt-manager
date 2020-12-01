@@ -119,6 +119,10 @@ var createSrt = (B,container,data) => {
     container.classList.remove("stopped")
     container.classList.remove("gray")
     container.classList.remove("orange")
+    let Name = document.createElement("div")
+    Name.innerHTML = data.name
+    Name.className = "name"
+    container.appendChild(Name)
     console.log(data.mode)
     if(data.mode == "srttoudp") {
         x.innerHTML = data.input + " to " + data.outout

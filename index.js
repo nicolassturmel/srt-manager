@@ -1,6 +1,9 @@
 
 
 const { spawn } = require('child_process');
+var http = require('http')
+const WebSocket = require('ws');
+const { Worker } = require('worker_threads')
 
 var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
     let srt
@@ -13,6 +16,84 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
         console.log("no passprase")
         srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort+"?rcvlatency=200","srt://:" + localPort])
     }
+    srt.stdout.on('data', (data) => {
+        console.log(id + ` stdout: ${data}`);
+      });
+    
+      srt.stderr.on('data', (data) => {
+        console.log(id + ` `+ localPort + " " + srcPort + " " + "stderr: ${data}");
+        let sss = srtConfigs.filter((s) => s.id == id)
+        if(sss.length == 1 && data) {
+            let str = "" + `${data}`
+            sss[0].log += str.replace(/\n/g,"<br>")
+
+            let lasts = sss[0].log.split("<br>")
+            let last = lasts[lasts.length-2]
+            console.log("----> " + last)
+            switch(last) {
+                case "Accepted SRT target connection":
+                    sss[0].target_state = true;
+                    break;
+                case "Accepted SRT source connection":
+                    sss[0].source_state = true;
+                    break;
+                case "SRT target disconnected":
+                    sss[0].target_state = false;
+                    break;
+                case "SRT source disconnected":
+                    sss[0].source_state = false;
+                    break;
+                default:
+                    break
+            }
+            if(lasts.length > 100) {
+                lasts[10] = "---! log has been cut here !---"
+                sss[0].log = lasts.splice(11,lasts.length-90).join("<br>")
+            }
+        }
+      });
+
+      srt.on('exit',() => {
+        let sss = srtConfigs.filter((s) => s.id == id)
+        if(sss.length == 1) {
+            sss[0].status = 0
+        }
+      })
+    return srt
+}
+
+let RtpReceivers = []
+var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd) => {
+    let srt
+
+    let mport = madd.split(".")[2]*256+parseInt(madd.split(".")[3])
+    if(passphrase) {
+        if(passphrase.length < 10)
+            passphrase = passphrase.padStart(10,'0')
+        console.log("passphrase: " + passphrase)
+        srt = spawn("srt-live-transmit-derivate",["srt://"+srcHost+":"+srcPort+"?passphrase="+passphrase+"&enforcedencryption=true","srt://:" + localPort+"?passphrase="+passphrase+"&enforcedencryption=true","udp://" + madd + ":"+mport+"?adapter=127.0.0.1"])}
+    else {
+        console.log("no passprase")
+        srt = spawn("srt-live-transmit-derivate",["srt://"+srcHost+":"+srcPort+"?rcvlatency=200","srt://:" + localPort,"udp://" + madd + ":"+mport+"adapter=127.0.0.1"])
+    }
+
+    launchRtpReceiver(id)
+    params = {
+        maddress: madd,
+        host: "127.0.0.1",
+        port: mport,
+        codec: "L24",
+        channels: 2,
+        buuferLength: 0.5,
+        offset: 0,     
+        id: id   
+      }
+      RtpReceivers[id].postMessage({
+        type: "restart",
+        data: params
+      })
+
+
     srt.stdout.on('data', (data) => {
         console.log(id + ` stdout: ${data}`);
       });
@@ -77,7 +158,53 @@ const { kill } = require('process');
 
 
 app.use(bodyParser.text());
+const server = http.createServer(app);
 
+let wss,
+    wss2;
+
+server.on('upgrade', function upgrade(request, socket, head) {
+    const pathname = url.parse(request.url).pathname;
+  
+    if (pathname === '/pcm') {
+      wss.handleUpgrade(request, socket, head, function done(ws) {
+        wss.emit('connection', ws, request);
+      });
+    } else if (pathname === '/stats') {
+      wss2.handleUpgrade(request, socket, head, function done(ws) {
+        wss2.emit('connection', ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  });
+
+  function openSocket() {
+    wss2 = new WebSocket.Server({ noServer: true });
+    console.log('Server ready...');
+    wss2.on('connection', function connection(ws) {
+          console.log('Socket connected...');
+          ws.on('message',(m) => {
+            let msg = JSON.parse(m)
+            console.log(m,msg)
+            switch(msg.type) {
+              case "clear":
+                Object.keys(RtpReceivers).forEach(k => RtpReceivers[k].postMessage({type: "clear"}))
+                break
+              default:
+                console.log("Unprocessed " + msg.type)
+                break
+            }
+          })
+          ws.on("error",() => console.log("You got halted due to an error"))
+          ws.send(JSON.stringify(
+            {
+            }
+          ))
+    });
+  }
+
+  openSocket()
 
 app.get('/', function (req, res) {
     res.send('<div id=root>ROOT</div>')
@@ -205,12 +332,13 @@ app.listen(80, function () {
     
 app.use('/', express.static(__dirname + '/html'));
 
-let manualPush = (host,source,destination,name) => {
+let manualPush = (host,source,destination,name,madd) => {
     let id = g_id++
     srtConfigs.push({
         mode: "pingpong",
         id: id,
-        process: newSrtPingPong(id,host,source,destination),
+        process: newSrtPingPongDerivate(id,host,source,destination,undefined,madd),
+        derivate: madd,
         host: host,
         source: source,
         name: name,
@@ -222,12 +350,56 @@ let manualPush = (host,source,destination,name) => {
     })  
 }
 
-manualPush("",35001,35002,"no  name")
-manualPush("",35101,35102,"no  name")
-manualPush("",35111,35112,"ROSS test")
-manualPush("",35121,35122,"DO test")
-manualPush("",35131,35132,"GDS1")
-manualPush("",35141,35142,"GDS2")
-manualPush("",35123,35124,"GDS3")
-manualPush("",35133,35134,"GDS4")
-manualPush("",35151,35152,"Pyramix NSL")
+// Sending rtp data
+function sendData(struct) {
+    struct.buffer = null
+    console.log(struct)
+    wss2.clients.forEach(function each(client) {
+      if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "stats",
+            data: struct
+          }));
+      }
+    });
+}
+
+var launchRtpReceiver = (id) =>
+{
+  var worker = new Worker("./rtp-worker.js")
+  worker.on('online', () => { 
+    // worker.postMessage({
+    //   type: "start",
+    //   data: {
+    //     maddress: sdp.connection.ip.split("/")[0],
+    //     host: host,
+    //     port: sdp.media[0].port,
+    //     codec: "L24",
+    //     channels: 2,
+    //     buuferLength: 0.05,
+    //     offset: (sdp.media && sdp.media.length>0 && sdp.media[0].mediaClk && sdp.media[0].mediaClk.mediaClockName == "direct")? sdp.media[0].mediaClk.mediaClockValue : 0
+    //   }
+    // })
+    console.log('One more worker') 
+  })
+  worker.on('message',(k) => {
+    switch(k.type) {
+      case "data":
+        sendData(k.data)
+        break
+      default:
+        break
+    }
+  })
+  RtpReceivers[id] = worker
+}
+
+manualPush("",35001,35002,"no  name","239.100.100.1")
+manualPush("",35101,35102,"no  name","239.100.100.2")
+manualPush("",35111,35112,"ROSS test","239.100.100.3")
+manualPush("",35121,35122,"DO test","239.100.100.4")
+manualPush("",35131,35132,"GDS1","239.100.100.5")
+manualPush("",35141,35142,"GDS2","239.100.100.6")
+manualPush("",35123,35124,"GDS3","239.100.100.7")
+manualPush("",35133,35134,"GDS4","239.100.100.8")
+manualPush("",35151,35152,"Pyramix NSL","239.100.100.9")

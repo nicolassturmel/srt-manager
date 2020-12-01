@@ -79,6 +79,15 @@ var getme = (uri,reask) => {
             plus3.onclick = rstRelay
             contIn.append(plus3)
         }
+        let plus4 = document.getElementById("pluselem4") 
+        if(!plus4) {
+            plus4 = document.createElement("div")
+            plus4.innerHTML = "+ derivate"
+            plus4.className = "backup-config-container"
+            plus4.id = "pluselem4"
+            plus4.onclick = rstDerivate
+            contIn.append(plus4)
+        }
 
         X.forEach(element => {
             let E = document.getElementById("container-" + element.id)
@@ -120,12 +129,20 @@ var createSrt = (B,container,data) => {
     container.classList.remove("gray")
     container.classList.remove("orange")
     let Name = document.createElement("div")
-    Name.innerHTML = data.name
+    let prefix = 0
+    switch(data.mode) {
+        case "pingpong":
+            prefix = "Relay: "
+            break;
+        default:
+            break;
+    }
+    if(data.derivate) prefix = "Derivate (" + data.derivate + ") " + prefix
+    Name.innerHTML = prefix + data.name
     Name.className = "name"
     container.appendChild(Name)
-    console.log(data.mode)
     if(data.mode == "srttoudp") {
-        x.innerHTML = data.input + " to " + data.outout
+        x.innerHTML = "SRT -> UDP " + data.input + " to " + data.outout
         if(data.status == 0) {
             container.classList.add("stoped")
             x.innerHTML = "process has ended"
@@ -133,7 +150,7 @@ var createSrt = (B,container,data) => {
         else if(!data.source_state ) container.classList.add("orange")
     }
     else if(data.mode == "udptosrt") {
-        x.innerHTML = data.input + " to " + data.outout
+        x.innerHTML = "UDP -> SRT" + data.input + " to " + data.outout
         if(data.status == 0) {
             container.classList.add("stoped")
             x.innerHTML = "process has ended"
@@ -223,6 +240,51 @@ var createInput = (cont,id,text,value) => {
       });
 }
 
+var rstDerivate = () => {
+    let ov = document.createElement("div")
+    ov.id = "overlay"
+    document.body.append(ov)
+    let ovIn = document.createElement("div")
+    ovIn.id = "overlayBox"
+    ov.append(ovIn)
+
+    let txt = document.createElement("div")
+    txt.innerHTML = "<h1>New SRT relay with derivation</h1>"
+    ovIn.append(txt)
+
+    let Name = document.createElement("input")
+    Name.placeholder = "relay name"
+    let portA = document.createElement("input")
+    portA.placeholder = "input port number"
+    let portB = document.createElement("input")
+    portB.placeholder = "output port number"
+    let passphrase = document.createElement("input")
+    passphrase.placeholder = "enter passprase"
+
+    ovIn.append(Name)
+    ovIn.append(portA)
+    ovIn.append(portB)
+    ovIn.append(passphrase)
+
+
+    let cancel = document.createElement("div")
+    cancel.innerHTML = "cancel"
+    cancel.id = "cancelBtn"
+    cancel.onclick = () => ov.outerHTML = ""
+    ovIn.append(cancel)
+    let ok = document.createElement("div")
+    ok.innerHTML = "ok"
+    ok.id = "okBtn"
+    ovIn.append(ok)
+
+    console.log(portA.value)
+    ok.onclick = () => {
+        let byteA = parseInt(portA.value)
+        let byteB = Math.floor(parseInt(portA.value)/256)
+        getme("/status?add=4&host=&source="+portA.value+"&destination="+portB.value+"&name="+Name.value+"&passphrase="+passphrase.value+"&derivate=239.222." + byteB + "." + byteA)
+        ov.outerHTML = ""
+    }
+}
 var rstRelay = () => {
     let ov = document.createElement("div")
     ov.id = "overlay"
@@ -235,6 +297,8 @@ var rstRelay = () => {
     txt.innerHTML = "<h1>New SRT relay</h1>"
     ovIn.append(txt)
 
+    let Name = document.createElement("input")
+    Name.placeholder = "relay name"
     let portA = document.createElement("input")
     portA.placeholder = "input port number"
     let portB = document.createElement("input")
@@ -242,6 +306,7 @@ var rstRelay = () => {
     let passphrase = document.createElement("input")
     passphrase.placeholder = "enter passprase"
 
+    ovIn.append(Name)
     ovIn.append(portA)
     ovIn.append(portB)
     ovIn.append(passphrase)
@@ -258,7 +323,7 @@ var rstRelay = () => {
     ovIn.append(ok)
 
     ok.onclick = () => {
-        getme("/status?add=1&host=&source="+portA.value+"&destination="+portB.value+"&passphrase="+passphrase.value)
+        getme("/status?add=1&host=&source="+portA.value+"&destination="+portB.value+"&name="+Name+"&passphrase="+passphrase.value)
         ov.outerHTML = ""
     }
 

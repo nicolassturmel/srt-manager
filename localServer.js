@@ -50,62 +50,69 @@ getInterfaces().forEach(i => {
 
 setInterval(() => {
     // Sends SAP announces
+    return
     srtConfigs.forEach(i => {
         //console.log("testing",i)
         if(i.mode == "srttoudp") {
             let server = i.input.split(":")[0]
             let port = i.input.split(":")[1]
-            http.get("http://" + server + "/sdp?port=" + port, res => {
-                console.log(`statusCode: ${res.statusCode}`)
-                let data=""
-                res.on('data', d => {
-                    data+=d
+            try {
+                http.get("http://" + server + "/sdp?port=" + port, res => {
+                    console.log(`statusCode: ${res.statusCode}`)
+                    let data=""
+                    res.on('data', d => {
+                        data+=d
+                    })
+                    res.on('end', () => {
+                        let Header = Buffer.alloc(8)
+                        Header.writeInt8(32,0)
+                        Header.writeInt8(0x00,1)
+                        Header.writeUInt16BE(port,2)
+
+                        console.log(i)
+                        let elems = i.outout.split("?adapter=")
+                        let host = elems[1]
+                        let mdst = elems[0].split(":")[0]
+                        let mport = elems[0].split(":")[1] || 5004
+
+
+                        Header.writeUInt32BE(ipInt(host).toInt(),4)
+
+                        if(data) {
+                            let lines = data.split("\r\n")
+
+                            lines.forEach((v, i) => {
+                                // Changing dst address
+                                if(v.startsWith("c=IN IP4")) 
+                                    lines[i] = "c=IN IP4 " + mdst + "/1"
+                                // Changing dst port
+                                if(v.startsWith("m=audio"))
+                                    lines[i] = "m=audio " + mport + " RTP/AVP" + v.split("RTP/AVP")[1]
+
+                                // Changing source address
+                                if(v.startsWith("o="))
+                                    lines[i] = v.split("IP4")[0] + "IP4 " + host
+                                if(v.startsWith("a=source-filter: incl IN IP4"))
+                                    lines[i] = "a=source-filter: incl IN IP4 " + mdst + " " + host
+
+                                // Insert stream name suffix
+                                if(v.startsWith("s="))
+                                    lines[i] += "-SRT:" + port
+                            })
+
+                            data = lines.join("\r\n")
+                        }
+                        let Msg = Buffer.concat([Header, Buffer.from("application/sdp"), Buffer.from(data || "missing")])
+
+                        if(SendSockets[host]) SendSockets[host].send(Msg, 0 , Msg.length, 9875, "239.255.255.255", () => console.log("Sent message"))
+                        else console.log("No socket for ",host)
+                    })
                 })
-                res.on('end', () => {
-                    let Header = Buffer.alloc(8)
-                    Header.writeInt8(32,0)
-                    Header.writeInt8(0x00,1)
-                    Header.writeUInt16BE(port,2)
-
-                    console.log(i)
-                    let elems = i.outout.split("?adapter=")
-                    let host = elems[1]
-                    let mdst = elems[0].split(":")[0]
-                    let mport = elems[0].split(":")[1] || 5004
-
-
-                    Header.writeUInt32BE(ipInt(host).toInt(),4)
-
-                    if(data) {
-                        let lines = data.split("\r\n")
-
-                        lines.forEach((v, i) => {
-                            // Changing dst address
-                            if(v.startsWith("c=IN IP4")) 
-                                lines[i] = "c=IN IP4 " + mdst + "/1"
-                            // Changing dst port
-                            if(v.startsWith("m=audio"))
-                                lines[i] = "m=audio " + mport + " RTP/AVP" + v.split("RTP/AVP")[1]
-
-                            // Changing source address
-                            if(v.startsWith("o="))
-                                lines[i] = v.split("IP4")[0] + "IP4 " + host
-                            if(v.startsWith("a=source-filter: incl IN IP4"))
-                                lines[i] = "a=source-filter: incl IN IP4 " + mdst + " " + host
-
-                            // Insert stream name suffix
-                            if(v.startsWith("s="))
-                                lines[i] += "-SRT:" + port
-                        })
-
-                        data = lines.join("\r\n")
-                    }
-                    let Msg = Buffer.concat([Header, Buffer.from("application/sdp"), Buffer.from(data || "missing")])
-
-                    if(SendSockets[host]) SendSockets[host].send(Msg, 0 , Msg.length, 9875, "239.255.255.255", () => console.log("Sent message"))
-                    else console.log("No socket for ",host)
-                })
-            })
+            }
+            catch(e) {
+                console.log("Could not get SDP")
+            }
+            
 
 
             
@@ -250,23 +257,33 @@ var newSrtToUdp = (id,input,output) => {
             sss[0].log += str.replace(/\n/g,"<br>")
 
             let lasts = sss[0].log.split("<br>")
-            let last = lasts[lasts.length-2]
-            console.log("----> " + last)
-            switch(last) {
-                case "Accepted SRT target connection":
-                    sss[0].target_state = true;
-                    break;
-                case "SRT source connected":
-                    sss[0].source_state = true;
-                    break;
-                case "SRT target disconnected":
-                    sss[0].target_state = false;
-                    break;
-                case "SRT source disconnected":
-                    sss[0].source_state = false;
-                    break;
-                default:
-                    break
+            let span = Math.min(4, lasts.length)
+            for(let lineIndex = 0; lineIndex < span; lineIndex++)
+            {
+                let last = lasts[lasts.length-span+lineIndex]
+                console.log("----> |" + last + "|") 
+                switch(last) {
+                    case "SRT target connected":
+                        console.log("Bim")
+                        sss[0].target_state = true;
+                        break;
+                    case "SRT source connected":
+                        console.log("Bam")
+                        sss[0].source_state = true;
+                        break;
+                    case "SRT target disconnected":
+                        sss[0].target_state = false;
+                        break;
+                    case "SRT source disconnected":
+                        sss[0].source_state = false;
+                        break;
+                    default:
+                        break
+                }
+            }
+            if(lasts.length > 100) {
+                lasts[10] = "---! log has been cut here !---"
+                sss[0].log = lasts.splice(11,lasts.length-90).join("<br>")
             }
 
         }
@@ -296,23 +313,33 @@ var newUdpToSrt = (id,input,output) => {
             sss[0].log += str.replace(/\n/g,"<br>")
 
             let lasts = sss[0].log.split("<br>")
-            let last = lasts[lasts.length-2]
-            console.log("----> " + last)
-            switch(last) {
-                case "SRT target connected":
-                    sss[0].target_state = true;
-                    break;
-                case "SRT source connected":
-                    sss[0].source_state = true;
-                    break;
-                case "SRT target disconnected":
-                    sss[0].target_state = false;
-                    break;
-                case "SRT source disconnected":
-                    sss[0].source_state = false;
-                    break;
-                default:
-                    break
+            let span = Math.min(4, lasts.length)
+            for(let lineIndex = 0; lineIndex < span; lineIndex++)
+            {
+                let last = lasts[lasts.length-span+lineIndex]
+                console.log("----> |" + last + "|") 
+                switch(last) {
+                    case "SRT target connected":
+                        console.log("Bim")
+                        sss[0].target_state = true;
+                        break;
+                    case "SRT source connected":
+                        console.log("Bam")
+                        sss[0].source_state = true;
+                        break;
+                    case "SRT target disconnected":
+                        sss[0].target_state = false;
+                        break;
+                    case "SRT source disconnected":
+                        sss[0].source_state = false;
+                        break;
+                    default:
+                        break
+                }
+            }
+            if(lasts.length > 100) {
+                lasts[10] = "---! log has been cut here !---"
+                sss[0].log = lasts.splice(11,lasts.length-90).join("<br>")
             }
 
         }
@@ -411,9 +438,11 @@ app.get('/status', function (req, res) {
             }
         }
         if(req.query.del) {
-            if(CST.BackupConfig.some(b => b.Id == parseInt(req.query.del))) {
-                let idx = CST.BackupConfig.findIndex( (b) => b.Id == parseInt(req.query.del) )
-                CST.BackupConfig.splice(idx,1)
+            let item = srtConfigs.filter(e => e.id == req.query.del)[0]
+            if(item) {
+                item.process.kill()
+                let id = srtConfigs.findIndex(e => e.id == item.id)
+                srtConfigs.splice(id,1)
             }
             else Errors.push("Did not find Id to delete")
         }
@@ -467,19 +496,38 @@ app.listen(8045, function () {
     
 app.use('/', express.static(__dirname + '/html'));
 
-let manualPush = (host,source,destination) => {
-    let id = g_id++
-    srtConfigs.push({
-        mode: "pingpong",
-        id: id,
-        process: newSrtPingPong(id,host,source,destination),
-        host: host,
-        source: source,
-        destination: destination,
-        status: 1,
-        log: "",
-        source_state: false,
-        target_state: false
-    })  
+let manualPush = (ggg,input,output) => {
+    let id = g_id++;
+                srtConfigs.push({
+                    mode: "udptosrt",
+                    id: id,
+                    process: newUdpToSrt(id,input,output),
+                    input: input,
+                    outout: output,
+                    status: 1,
+                    log: "",
+                    target_state: false
+                }) 
 }
+let manualPush2 = (ggg,input,output) => {
+    let id = g_id++;
+                srtConfigs.push({
+                    mode: "srttoudp",
+                    id: id,
+                    process: newSrtToUdp(id,input,output),
+                    input: input,
+                    outout: output,
+                    status: 1,
+                    log: "",
+                    source_state: false
+                }) 
+}
+
+manualPush(1,"239.1.1.135:5004?adapter=192.168.1.162","18.193.110.254:35111")
+manualPush(2,"239.1.1.135:5004?adapter=192.168.1.162","18.193.110.254:35121")
+manualPush(3,"239.1.1.135:5004?adapter=192.168.1.162","18.193.138.129:35111")
+manualPush(4,"239.1.1.135:5004?adapter=192.168.1.162","18.193.138.129:35121")
+manualPush(5,"239.1.1.135:5004?adapter=192.168.1.162","18.193.138.129:35001")
+manualPush(6,"239.1.1.135:5004?adapter=192.168.1.162","18.193.110.254:35001")
+manualPush2(7,"18.193.110.254:35002","239.9.9.1:5004?adapter=192.168.1.162")
   

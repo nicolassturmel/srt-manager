@@ -106,27 +106,30 @@ var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd) => {
             sss[0].log += str.replace(/\n/g,"<br>")
 
             let lasts = sss[0].log.split("<br>")
-            let last = lasts[lasts.length-2]
-            console.log("----> " + last)
-            switch(last) {
-                case "Accepted SRT target connection":
-                    sss[0].target_state = true;
-                    break;
-                case "Accepted SRT source connection":
-                    sss[0].source_state = true;
-                    break;
-                case "SRT target disconnected":
-                    sss[0].target_state = false;
-                    break;
-                case "SRT source disconnected":
-                    sss[0].source_state = false;
-                    break;
-                default:
-                    break
-            }
-            if(lasts.length > 100) {
-                lasts[10] = "---! log has been cut here !---"
-                sss[0].log = lasts.splice(11,lasts.length-90).join("<br>")
+            for(let lineIndex = 0; lineIndex < 4; lineIndex++)
+            {
+                let last = lasts[lasts.length-4+lineIndex]
+                console.log("----> " + last)
+                switch(last) {
+                    case "Accepted SRT target connection":
+                        sss[0].target_state = true;
+                        break;
+                    case "Accepted SRT source connection":
+                        sss[0].source_state = true;
+                        break;
+                    case "SRT target disconnected":
+                        sss[0].target_state = false;
+                        break;
+                    case "SRT source disconnected":
+                        sss[0].source_state = false;
+                        break;
+                    default:
+                        break
+                }
+                if(lasts.length > 100) {
+                    lasts[10] = "---! log has been cut here !---"
+                    sss[0].log = lasts.splice(11,lasts.length-90).join("<br>")
+                }
             }
         }
       });

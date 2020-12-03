@@ -65,6 +65,7 @@ var getRtp = (params) => {
     let lastSeq = 0
     let lastTime = BigInt(0)
   
+    let seqError = 0
     client.on('message', function (message, remote) {   
         //console.log(".")
         let v = message.readInt8(0)
@@ -74,23 +75,27 @@ var getRtp = (params) => {
         let ssrc = message.readUInt32BE(8)
   
         // inter packet time
-        var now = date.Now() ;
-        var offset = BigInt(tai.unixToAtomic(now)*1000 - now*1000);
-        let time = process.hrtime.bigint() + offset
+        var now = Date.now() - Date.UTC(1972, 0, 1); // 63072000000;
+        var taioffset = BigInt(tai.unixToAtomic(now) - now)*1000000n - process.hrtime.bigint() + BigInt(Date.now())*1000000n;
+        let time = process.hrtime.bigint() + taioffset
         let diff = Number(time - lastTime)/1000000;
         lastTime = time
   
         // computing ts
-        let realTime = timeOffset + time
-        let realTS = Number(realTime*BigInt(sampleRate) / 1000000000n)%Math.pow(2,32)
+        let realTime = timeOffset + time 
+        let realTS = Number(realTime*BigInt(sampleRate) / 1000000000n )%Math.pow(2,32)
         let tsdiff = (realTS - ts + Math.pow(2,32))%Math.pow(2,32)
         if(tsdiff > Math.pow(2,31)) tsdiff = tsdiff - Math.pow(2,32)
         inter_packet_stats.add(diff)
         delay_stats.add(tsdiff)
-  
-  
-        if(seq != lastSeq+1)
+        
+        if(seq > lastSeq+1) {
+            if(lastSeq==0 && seq != 1)
+                console.log("init")
+            else
+                seqError+=seq-lastSeq-1
           console.log("ERROR Got Seq: ",seq," Should be ",lastSeq + 1)
+        }
         lastSeq = seq
         if(lastSeq == 65535) lastSeq = -1
         
@@ -99,6 +104,7 @@ var getRtp = (params) => {
         {
           if(currentPos == interval*sampleRate)
           {
+              console.log(tsdiff/48000,offset,timeOffset)
             //console.log("sending " + currentPos + " at " + Date.now())
             currentPos = 0
             let rmsT = [],
@@ -115,6 +121,7 @@ var getRtp = (params) => {
                 data: {
                     id: id,
                     madd: madd,
+                    seqError: seqError,
                     buffer: buffer[currentBuffer],
                     delay: delay_stats.get(),
                     inter_packets: inter_packet_stats.get(),

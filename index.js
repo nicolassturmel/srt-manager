@@ -74,7 +74,7 @@ var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd) => {
         srt = spawn("srt-live-transmit-derivate",["srt://"+srcHost+":"+srcPort+"?passphrase="+passphrase+"&enforcedencryption=true","srt://:" + localPort+"?passphrase="+passphrase+"&enforcedencryption=true","udp://" + madd + ":"+mport+"?adapter=127.0.0.1"])}
     else {
         console.log("no passprase")
-        srt = spawn("srt-live-transmit-derivate",["srt://"+srcHost+":"+srcPort+"?rcvlatency=200","srt://:" + localPort,"udp://" + madd + ":"+mport+"adapter=127.0.0.1"])
+        srt = spawn("srt-live-transmit-derivate",["srt://"+srcHost+":"+srcPort+"?rcvlatency=50","srt://:" + localPort,"udp://" + madd + ":"+mport+"adapter=127.0.0.1"])
     }
 
     launchRtpReceiver(id)
@@ -328,6 +328,7 @@ app.get('/status', function (req, res) {
 
 app.listen(80, function () {
       console.log('Example app listening on port 80!')
+      console.log('Example app listening on port 30080!')
 })
     
 app.use('/', express.static(__dirname + '/html'));

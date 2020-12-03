@@ -28,9 +28,10 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
             sss[0].log += str.replace(/\n/g,"<br>")
 
             let lasts = sss[0].log.split("<br>")
-            for(let lineIndex = 0; lineIndex < 4; lineIndex++)
+            let span = Math.min(4, lasts.length)
+            for(let lineIndex = 0; lineIndex < span; lineIndex++)
             {
-                let last = lasts[lasts.length-4+lineIndex]
+                let last = lasts[lasts.length-span+lineIndex]
                 console.log("----> " + last)
                 switch(last) {
                     case "Accepted SRT target connection":
@@ -109,9 +110,10 @@ var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd) => {
             sss[0].log += str.replace(/\n/g,"<br>")
 
             let lasts = sss[0].log.split("<br>")
-            for(let lineIndex = 0; lineIndex < 4; lineIndex++)
+            let span = Math.min(4, lasts.length)
+            for(let lineIndex = 0; lineIndex < span; lineIndex++)
             {
-                let last = lasts[lasts.length-4+lineIndex]
+                let last = lasts[lasts.length-span+lineIndex]
                 console.log("----> " + last)
                 switch(last) {
                     case "Accepted SRT target connection":

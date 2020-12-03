@@ -1,6 +1,7 @@
 
 var stats = require('./statistics')
 var dgram = require('dgram'); 
+var tai = require("t-a-i");
 
 var inter_packet_stats = new stats()
 var delay_stats = new stats()
@@ -73,13 +74,15 @@ var getRtp = (params) => {
         let ssrc = message.readUInt32BE(8)
   
         // inter packet time
-        let time = process.hrtime.bigint()
+        var now = date.Now() ;
+        var offset = BigInt(tai.unixToAtomic(now)*1000 - now*1000);
+        let time = process.hrtime.bigint() + offset
         let diff = Number(time - lastTime)/1000000;
         lastTime = time
   
         // computing ts
         let realTime = timeOffset + time
-        let realTS = Number(realTime*48000n / 1000000000n)%Math.pow(2,32)
+        let realTS = Number(realTime*BigInt(sampleRate) / 1000000000n)%Math.pow(2,32)
         let tsdiff = (realTS - ts + Math.pow(2,32))%Math.pow(2,32)
         if(tsdiff > Math.pow(2,31)) tsdiff = tsdiff - Math.pow(2,32)
         inter_packet_stats.add(diff)
@@ -87,7 +90,7 @@ var getRtp = (params) => {
   
   
         if(seq != lastSeq+1)
-          console.log("Err Seq: ",seq,lastSeq)
+          console.log("ERROR Got Seq: ",seq," Should be ",lastSeq + 1)
         lastSeq = seq
         if(lastSeq == 65535) lastSeq = -1
         
@@ -133,7 +136,11 @@ var getRtp = (params) => {
   
           let s, sL = 0, sR = 0
           for(let c = 0 ; c < channels ; c++) {
+            if(bytePerSampleStream == 3)
             s = (message.readInt32BE(sampleIndex*bytePerSampleStream*channels+12 + bytePerSampleStream*c - 1) & 0x00FFFFFF) << 8
+            else 
+                s = Math.pow(2,(8*bytePerSample-1))*(message.readFloatLE(sampleIndex*bytePerSampleStream*channels+12 + bytePerSampleStream*c )) 
+
             rms[c].add((s / Math.pow(2,(8*bytePerSample-1)))*(s / Math.pow(2,(8*bytePerSample-1))))
             sL += mix[c][0]* s
             sR += mix[c][1]* s
@@ -145,7 +152,10 @@ var getRtp = (params) => {
           buffer[currentBuffer].writeInt32LE(sL,bytePerSample * 2*currentPos)
           buffer[currentBuffer].writeInt32LE(sR,bytePerSample * 2*currentPos + bytePerSample)
           currentPos += 1
+
         }
+
+        //console.log((message.length - 12)/(channels * bytePerSampleStream),message)
     });
   
     client.bind(port);

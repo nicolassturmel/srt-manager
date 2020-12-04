@@ -12,7 +12,7 @@ console.log(workerData)
 
 let timeOffset = 0n
 
-let interval = 0.5,
+let interval = 0.1,
     sampleRate = 48000,
     bytePerSample = 4,
     bytePerSampleStream = 3,
@@ -104,7 +104,7 @@ var getRtp = (params) => {
         {
           if(currentPos == interval*sampleRate)
           {
-              console.log(tsdiff/48000,offset,timeOffset)
+              //console.log(tsdiff/48000,offset,timeOffset)
             //console.log("sending " + currentPos + " at " + Date.now())
             currentPos = 0
             let rmsT = [],
@@ -124,18 +124,18 @@ var getRtp = (params) => {
                     seqError: seqError,
                     buffer: buffer[currentBuffer],
                     delay: delay_stats.get(),
-                    inter_packets: inter_packet_stats.get(),
+                    //inter_packets: inter_packet_stats.get(),
                     rms: rmsT,
                     peak: peakT,
-                    peakg: peakgT,
-                    rtp : {
-                        payload_type: pt,
-                        ssrc: ssrc
-                    },
-                    sender : {
-                        ip: remote.address,
-                        port: remote.port
-                    }
+                    //peakg: peakgT,
+                    //rtp : {
+                    //    payload_type: pt,
+                    //    ssrc: ssrc
+                    //},
+                    //sender : {
+                    //    ip: remote.address,
+                    //    port: remote.port
+                    //}
                 }
             })
             currentBuffer = (currentBuffer+1)%2

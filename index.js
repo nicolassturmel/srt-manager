@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 var http = require('http')
 const WebSocket = require('ws');
 const { Worker } = require('worker_threads')
+const url = require('url');
 
 var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
     let srt
@@ -165,13 +166,18 @@ const bodyParser = require('body-parser');
 const { kill } = require('process');
 
 
-app.use(bodyParser.text());
 const server = http.createServer(app);
+app.use(bodyParser.text());
+
+server.listen(80, function () {
+    console.log('Example app listening on port 80!')
+})
 
 let wss,
     wss2;
 
 server.on('upgrade', function upgrade(request, socket, head) {
+    console.log("upgrade")
     const pathname = url.parse(request.url).pathname;
   
     if (pathname === '/pcm') {
@@ -187,30 +193,43 @@ server.on('upgrade', function upgrade(request, socket, head) {
     }
   });
 
-  function openSocket() {
+function openSocket() {
+    wss = new WebSocket.Server({ 
+        noServer: true 
+    });
+    console.log('Server ready...');
+    wss.on('connection', function connection(ws) {
+        console.log('Socket connected. sending data...');
+        ws.on("error",() => console.log("You got halted due to an error"))
+        // interval = setInterval(function() {
+        //   sendData();
+        // }, 50);
+    });
+    
     wss2 = new WebSocket.Server({ noServer: true });
     console.log('Server ready...');
     wss2.on('connection', function connection(ws) {
-          console.log('Socket connected...');
-          ws.on('message',(m) => {
+        console.log('Socket connected. sending data...');
+        ws.send(JSON.stringify({
+            type: "params",
+            data: params
+        }));
+        ws.on('message',(m) => {
             let msg = JSON.parse(m)
             console.log(m,msg)
             switch(msg.type) {
-              case "clear":
-                Object.keys(RtpReceivers).forEach(k => RtpReceivers[k].postMessage({type: "clear"}))
-                break
-              default:
-                console.log("Unprocessed " + msg.type)
-                break
+                case "clear":
+                    Object.keys(RtpReceivers).forEach(k => RtpReceivers[k].postMessage({type: "clear"}))
+                    break
+                default:
+                    console.log("Unprocessed " + msg.type)
+                    break
             }
-          })
-          ws.on("error",() => console.log("You got halted due to an error"))
-          ws.send(JSON.stringify(
-            {
-            }
-          ))
+        })
+        ws.on("error",() => console.log("You got halted due to an error"))
+        ws.send(JSON.stringify({}))
     });
-  }
+}
 
   openSocket()
 
@@ -334,10 +353,6 @@ app.get('/status', function (req, res) {
 })
     
 
-app.listen(80, function () {
-      console.log('Example app listening on port 80!')
-      console.log('Example app listening on port 30080!')
-})
     
 app.use('/', express.static(__dirname + '/html'));
 
@@ -362,7 +377,7 @@ let manualPush = (host,source,destination,name,madd) => {
 // Sending rtp data
 function sendData(struct) {
     struct.buffer = null
-    console.log(struct)
+    //console.log(struct)
     wss2.clients.forEach(function each(client) {
       if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
@@ -404,7 +419,7 @@ var launchRtpReceiver = (id) =>
 }
 
 manualPush("",35001,35002,"no  name","239.100.100.1")
-manualPush("",35101,35102,"no  name","239.100.100.2")
+manualPush("3.231.208.13",9995,35102,"Rcv ROSS","239.100.100.2")
 manualPush("",35111,35112,"ROSS test","239.100.100.3")
 manualPush("",35121,35122,"DO test","239.100.100.4")
 manualPush("",35131,35132,"GDS1","239.100.100.5")

@@ -1,0 +1,107 @@
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow-y: scroll;
+    color: white;
+    font-weight: bold;
+    background-color: #191919;
+}
+
+#container {
+    position: relative;
+    width: 90%;
+    height: 90%;
+    border: greenyellow 1px solid;
+}    
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background-color: hotpink;
+    border-radius: 50%;
+}
+
+.dot.aws {
+    background-color: grey;
+}
+
+.floating {
+    position: absolute;
+}
+
+.canada {
+    top: 20%;
+    left: 10%;
+}
+
+.awsfran {
+    top: 50%;
+    left: 50%;
+}
+
+.germany {
+    top: 20%;
+    left: 80%;
+}
+.france {
+    top: 70%;
+    left: 80%;
+}
+.switzerland {
+    top: 50%;
+    right: 50px;
+}
+
+.delay {
+    position: absolute;
+    bottom: -25px;
+    width: 60px;
+    height: 20px;
+    text-align: left;
+    background-color: white;
+    color: black;
+}
+.errors {
+    position: absolute;
+    bottom: -50px;
+    width: 60px;
+    height: 20px;
+    color: green;
+}
+.red {
+    color: red;
+}
+.name {
+    position: absolute;
+    color: white;
+    width: 150px;
+    text-align: center;
+    right:-75px;
+    top:-20px;
+}
+
+.vumeter {
+    position: absolute;
+    height: 50px;
+    width: 10px;
+    background-color: white;
+}
+
+.right {
+    left: -15px;
+}
+
+.left {
+    left: -30px;
+}
+
+.slider {
+    position: absolute;
+    width: 100%;
+    background-color: green;
+    bottom: 0;
+}
+
+.hidden {
+    display: none;
+}

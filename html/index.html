@@ -8,34 +8,42 @@
 </head>
 <body>
 <div id="container">
-    <div id=vumeter>
-        <div id=nostream></div>
-        <div id=left class="bar  left white"></div>
-        <div id=leftlvl class="bar audio left"></div>
-        <div id=leftmax class="bar max left"></div>
-        <div id=leftmaxg class="bar maxg left"></div>
-        <div id=graduation class="bar graduation"></div>
-        <div id=right class="bar  right white"></div>
-        <div id=rightlvl class="bar audio right"></div>
-        <div id=rightmax class="bar max right"></div>
-        <div id=rightmaxg class="bar maxg right"></div>
-        <div id=stats class=stats >
-            <div id=txtstats class="txt-stats">RTP</div>
-            <div id=good class=good></div>
-            <div id=good-ip-mean class="interpacket mean-stat"></div>
-            <div id=good-ip-max class="interpacket max-stat"></div>
-            <div id=good-ip-maxg class="interpacket maxg-stat"></div>
-            <div id=good-del-mean class="delay mean-stat"></div>
-            <div id=good-del-max class="delay max-stat"></div>
-            <div id=good-del-maxg class="delay maxg-stat"></div>
-        </div>
+    <div id=canada class="floating canada">
+        <div class=dot></div>
+        <div class=delay id=delayCanada></div>
+        <div class=errors id=errorsCanada></div>
+        <div class=name >Toronto</div>
+        <div class="vumeter left" ><div class=slider id=vumeterLeftCanada></div></div>
+        <div class="vumeter right"><div class=slider id=vumeterRightCanada></div></div>
     </div>
-    <div id=collection>
-        <div id="collection-in">
-
-        </div>
+    <div id=awsfran class="floating awsfran">
+        <div class="dot aws"></div>
+        <div class=name >AWS - Francfort</div>
     </div>
-    <div id=optbar><span id=button class=hspace>Play </span><span id=circle class=hspace>S</span><span class=hspace><select id=interfaceSelect></select></span> </div>
+    <div id=germany class="floating germany">
+        <div class=dot></div>
+        <div class=delay id=delayGermany></div>
+        <div class=errors id=errorsGermany></div>
+        <div class=name >Germany</div>
+        <div class="vumeter left" ><div class=slider id=vumeterLeftGermany></div></div>
+        <div class="vumeter right"><div class=slider id=vumeterRightGermany></div></div>
+    </div>
+    <div id=france class="floating france">
+        <div class=dot></div>
+        <div class=delay id=delayFrance></div>
+        <div class=errors id=errorsFrance></div>
+        <div class=name >Grenoble</div>
+        <div class="vumeter left" ><div class=slider id=vumeterLeftFrance></div></div>
+        <div class="vumeter right"><div class=slider id=vumeterRightFrance></div></div>
+    </div>
+    <div id=switzerland class="floating switzerland">
+        <div class=dot></div>
+        <div class=delay id=delaySwitzerland></div>
+        <div class=errors id=errorsSwitzerland></div>
+        <div class=name >Lausanne</div>
+        <div class="vumeter left" ><div class=slider id=vumeterLeftSwitzerland></div></div>
+        <div class="vumeter right"><div class=slider id=vumeterRightSwitzerland></div></div>
+    </div>
 </div>
 <div id=datasee>show / hide debug data</div>
 <div id=data class=hidden></div>
@@ -46,71 +54,13 @@ var bufferindex = 0
 var packet_size = 48
 var params = null
 
-var setHeight = (a , b) => {
-    let l = document.getElementById(b).getBoundingClientRect().height
-    let lvl = 0
-    if(a === null) 
-        lvl = 0
-    else if(a > 0)
-        lvl = l
-    else if(a < -90)
-        lvl = 2
-    else
-        lvl = (((100+a)/21.5)**3 / 100 * l)
-    document.getElementById(b + "lvl").style.height =  lvl + "px"
-}
-var setMax = (a , b) => {
-    let l = document.getElementById(b).getBoundingClientRect().height
-    let lvl = 0
-    if(a > 0)
-        lvl = l
-    else if(a < -90)
-        lvl = 2
-    else
-        lvl = (((100+a)/21.5)**3 / 100 * l)
-    document.getElementById(b + "max").style.bottom = "calc(20% + " + lvl + "px)" 
-}
-var setMaxg = (a , b) => {
-    let l = document.getElementById(b).getBoundingClientRect().height
-    let lvl = 0
-    if(a > 0)
-        lvl = l
-    else if(a < -90)
-        lvl = 2
-    else
-        lvl = (((100+a)/21.5)**3 / 100 * l)
-    document.getElementById(b + "maxg").style.bottom = "calc(20% + " + lvl + "px)" 
-}
+var topZero = (r) =>  r>100? 100 : (r>0? r : 0)
 
-var makeGrad = () => {
-    let c = document.getElementById("graduation")
-    let l = c.getBoundingClientRect().height
-    let vals = [-6,-12,-24,-36,-90]
-    vals.forEach(element => {
-        let d = document.createElement("div")
-        d.innerHTML = element
-        d.className = "gradElem"
-        d.style.bottom = (((100+element)/21.5)**3) + "%"
-        c.appendChild(d)
-
-    });
-}
 
  window.onload = function() {
 
-    let select = document.getElementById("interfaceSelect")
-    select.onchange = () => {
-        ws.send(JSON.stringify(
-            {
-                type: "selectInterface",
-                data: select.options[select.selectedIndex].value
-            }
-        ))
-    }
-                    
-
-   var socketURL = 'ws://'+self.location.host+":"+self.location.port+'/pcm';
-   var socketURL2 = 'ws://'+self.location.host+":"+self.location.port+'/stats';
+   var socketURL = 'ws://'+self.location.host+'/pcm';
+   var socketURL2 = 'ws://'+self.location.host+'/stats';
    var player = null
 
    var startPlay = () => {
@@ -130,19 +80,7 @@ var makeGrad = () => {
     }
    let data = true
 
-   document.getElementById("button").onclick = () => {
-       if(player) {
-            player.destroy()
-            player = null
-           console.log("Stoping play")
-           document.getElementById("button").classList.remove("on")
-       }
-       else {
-           startPlay()
-           console.log("Starting play")
-       }
-   }
-
+   
    document.getElementById("datasee").onclick = () => {
     if(data) {
         document.getElementById("data").classList.remove("hidden")
@@ -153,12 +91,10 @@ var makeGrad = () => {
     data = !data
    }
 
-   makeGrad()
-
    var ws = new WebSocket(socketURL);
     ws.binaryType = 'arraybuffer';
-    ws.onopen = () => document.getElementById("circle").classList.add("on")
-    ws.onclose = () => document.getElementById("circle").classList.remove("on")
+   // ws.onopen = () => document.getElementById("circle").classList.add("on")
+   // ws.onclose = () => document.getElementById("circle").classList.remove("on")
     ws.addEventListener('message',function(event) {
         var data = new Uint8Array(event.data);
         if(player)
@@ -167,13 +103,6 @@ var makeGrad = () => {
 
     let laststream = 0 
     
-    setInterval(() => {
-        let T = Date.now() - laststream
-        if(T < 500)
-            document.getElementById("nostream").classList.add("hidden")
-        else
-            document.getElementById("nostream").classList.remove("hidden")
-    },100)
 
     var ws = new WebSocket(socketURL2);
        ws.addEventListener('message',function(event) {
@@ -186,66 +115,38 @@ var makeGrad = () => {
                     bufferindex = (bufferindex + 1)%bufferstats.length
                     let jj = bufferstats[(bufferindex + 2)%bufferstats.length]
                     if(!jj.rms) return
-                    setHeight(jj.rms[0],"left")
-                    setHeight(jj.rms[1],"right")
-                    setMax(jj.peak[0],"left")
-                    setMax(jj.peak[1],"right")
-                    setMaxg(jj.peakg[0],"left")
-                    setMaxg(jj.peakg[1],"right")
-                    document.getElementById("good-ip-mean").style.height = Math.min(100*jj.inter_packets.mean/20,100) + "%"
-                    document.getElementById("good-ip-max").style.height = Math.min(100*jj.inter_packets.max/20,100) + "%"
-                    document.getElementById("good-ip-maxg").style.height = Math.min(100*jj.inter_packets.max_global/20,100) + "%"
-                    document.getElementById("good-del-mean").style.height = Math.min(100*jj.delay.mean/packet_size/20,100) + "%"
-                    document.getElementById("good-del-max").style.height = Math.min(100*jj.delay.max/20/packet_size,100) + "%"
-                    document.getElementById("good-del-maxg").style.height = Math.min(100*jj.delay.max_global/20/packet_size,100) + "%"
-                    let g = document.getElementById("good")
-                    if(jj.inter_packets.max_global > 20 || jj.delay.max_global > 20*packet_size) g.style["background-color"] = "red"
-                    else if(jj.delay.mean/48/jj.inter_packets.mean < 2) g.style["background-color"] = "green"
-                    else g.style["background-color"] = "orange"
+
+                    let id = false
+                    switch(gjj.data.id) {
+                        case 0:
+                            id = "France"
+                            break;
+                        case 1:
+                            id = "Canada"
+                            break;
+                        case 2:
+                            id = "Switzerland"
+                            break;
+                        case 3:
+                            id = "Germany"
+                            break;
+                        default:
+                            break;
+                    }
+                    if(id) {
+                        document.getElementById("delay" + id).innerHTML = parseInt(gjj.data.delay.mean/48)+"ms"
+                        document.getElementById("vumeterLeft" + id).style.height = topZero(100+gjj.data.peak[0]*2) + "%"
+                        document.getElementById("vumeterRight" + id).style.height = topZero(100+gjj.data.peak[1]*2) + "%"
+                        document.getElementById("errors" + id).innerHTML = "Lost " + gjj.data.seqError + " packets"
+                        if(gjj.data.seqError != 0)
+                            document.getElementById("errors" + id).classList.add("red")
+                        else
+                            document.getElementById("errors" + id).classList.remove("red")
+                    }
                     break;
                 case "streams":
-                    if(gjj.action == "update")  {
-                        let cont = document.getElementById("collection-in")
-                        let name = gjj.data.name
-                        let elem = document.getElementById("session-" + name)
-                        if(!elem)
-                        {
-                            //console.log(gjj.data)
-                            elem = document.createElement("div")
-                            elem.id = "session-" + name
-                            elem.className = "session"
-                            elem.innerHTML = name + "<br>" + (gjj.data.connection ? gjj.data.connection.ip : gjj.data.media[0].connection.ip)+ ":" + gjj.data.media[0].port
-                            elem.onclick = () => {
-                                ws.send(JSON.stringify({type: 'session', data: name}))
-                                document.querySelectorAll("div.session").forEach(elem => {
-                                    if(elem.id == "session-" + name )
-                                        elem.classList.add("selected")
-                                    else
-                                        elem.classList.remove("selected")
-                                })
-                            }
-                            cont.appendChild(elem)
-                        }
-                    }
-                    else if(gjj.action == "remove") {
-                        let name = gjj.data.name
-                        let elem = document.getElementById("session-" + name)
-                        if(elem) elem.outerHTML = ""
-                    }
                     break;
                 case "interfaces":
-                    let select = document.getElementById("interfaceSelect")
-                    let elem = document.createElement("option")
-                    elem.innerHTML = "choose an interface"
-                    select.appendChild(elem)
-                    gjj.data.forEach(i => {
-                        let elem = document.createElement("option")
-                        elem.innerHTML = i.name + " : " + i.ip
-                        elem.value = i.ip
-                        select.appendChild(elem)
-                    })
-                    select.selectedIndex = 0
-                    console.log(gjj.data)
                     break
                 case "params":
                     params = gjj.data
@@ -257,10 +158,6 @@ var makeGrad = () => {
             
        });
 
-   document.getElementById("vumeter").onclick = () => {
-       ws.send(JSON.stringify({type: 'clear'}))
-       console.log('sending clear')
-   }
  }   
 </script>
 <script type="text/javascript" src="../pcm-player.js"></script>

@@ -200,7 +200,15 @@ function openSocket() {
     console.log('Server ready...');
     wss.on('connection', function connection(ws) {
         console.log('Socket connected. sending data...');
+        ws._selectedId = -1
         ws.on("error",() => console.log("You got halted due to an error"))
+        ws.on('message', (m) => {
+            let msg = JSON.parse(m)
+            console.log(m,msg)
+            if(msg.id >= 0) {
+                ws._selectedId = msg.id
+            }
+        })
         // interval = setInterval(function() {
         //   sendData();
         // }, 50);
@@ -376,6 +384,13 @@ let manualPush = (host,source,destination,name,madd) => {
 
 // Sending rtp data
 function sendData(struct) {
+    wss.clients.forEach((client) => {
+        if(client.readyState == WebSocket.OPEN)
+            if(client._selectedId == struct.id){
+                client.send(struct.buffer)
+                console.log("Sent buffer " + struct.id)
+            }
+    })
     struct.buffer = null
     //console.log(struct)
     wss2.clients.forEach(function each(client) {
@@ -419,7 +434,7 @@ var launchRtpReceiver = (id) =>
 }
 
 manualPush("",35001,35002,"no  name","239.100.100.1")
-manualPush("3.231.208.13",9995,35102,"Rcv ROSS","239.100.100.2")
+manualPush("3.231.208.13",9993,35102,"Rcv ROSS","239.100.100.2")
 manualPush("",35111,35112,"ROSS test","239.100.100.3")
 manualPush("",35121,35122,"DO test","239.100.100.4")
 manualPush("",35131,35132,"GDS1","239.100.100.5")

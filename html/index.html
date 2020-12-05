@@ -8,11 +8,15 @@
 </head>
 <body>
 <div id="container">
+    <div id=player>
+        <span id=playbtn></span>
+        <span id=infos>Clic on a city name to play audio</span>
+    </div>
     <div id=canada class="floating canada">
         <div class=dot></div>
         <div class=delay id=delayCanada></div>
         <div class=errors id=errorsCanada></div>
-        <div class=name >Toronto</div>
+        <div class=name id="name-1">Toronto</div>
         <div class="vumeter left" ><div class=slider id=vumeterLeftCanada></div></div>
         <div class="vumeter right"><div class=slider id=vumeterRightCanada></div></div>
     </div>
@@ -24,7 +28,7 @@
         <div class=dot></div>
         <div class=delay id=delayGermany></div>
         <div class=errors id=errorsGermany></div>
-        <div class=name >Germany</div>
+        <div class=name id="name-3" >Germany</div>
         <div class="vumeter left" ><div class=slider id=vumeterLeftGermany></div></div>
         <div class="vumeter right"><div class=slider id=vumeterRightGermany></div></div>
     </div>
@@ -32,7 +36,7 @@
         <div class=dot></div>
         <div class=delay id=delayFrance></div>
         <div class=errors id=errorsFrance></div>
-        <div class=name >Grenoble</div>
+        <div class=name id="name-0" >Grenoble</div>
         <div class="vumeter left" ><div class=slider id=vumeterLeftFrance></div></div>
         <div class="vumeter right"><div class=slider id=vumeterRightFrance></div></div>
     </div>
@@ -40,7 +44,7 @@
         <div class=dot></div>
         <div class=delay id=delaySwitzerland></div>
         <div class=errors id=errorsSwitzerland></div>
-        <div class=name >Lausanne</div>
+        <div class=name id="name-2">Lausanne</div>
         <div class="vumeter left" ><div class=slider id=vumeterLeftSwitzerland></div></div>
         <div class="vumeter right"><div class=slider id=vumeterRightSwitzerland></div></div>
     </div>
@@ -56,6 +60,12 @@ var params = null
 
 var topZero = (r) =>  r>100? 100 : (r>0? r : 0)
 
+var idList = [
+    "France",
+    "Canada",
+    "Switzerland",
+    "Germany"
+]
 
  window.onload = function() {
 
@@ -63,22 +73,29 @@ var topZero = (r) =>  r>100? 100 : (r>0? r : 0)
    var socketURL2 = 'ws://'+self.location.host+'/stats';
    var player = null
 
-   var startPlay = () => {
-       if(!params) return
+   var startPlay = (sid) => {
        if(player) {
            player.destroy()
            player = null 
-           document.getElementById("button").classList.remove("on")
        }
+       if(sid < 0) return
        player = new PCMPlayer({
             encoding: '32bitInt',
             channels: 2,
             sampleRate: 48000,
-            flushingTime:15000
+            flushingTime:2000
         });
-        document.getElementById("button").classList.add("on")
+        ws.send(JSON.stringify(
+            {
+                id: sid
+            }
+        ))
+        console.log("Sending " + sid)
+
+        idList.forEach((v,i) => document.getElementById("name-"+i).classList.remove("green"))
+        
+        document.getElementById("name-"+sid).classList.add("green")
     }
-   let data = true
 
    
    document.getElementById("datasee").onclick = () => {
@@ -97,15 +114,22 @@ var topZero = (r) =>  r>100? 100 : (r>0? r : 0)
    // ws.onclose = () => document.getElementById("circle").classList.remove("on")
     ws.addEventListener('message',function(event) {
         var data = new Uint8Array(event.data);
+        console.log("Got DATA")
         if(player)
             player.feed(data);
     });
 
     let laststream = 0 
     
+    var socketURL2 = 'ws://'+self.location.host+'/stats';
+   var player = null
 
-    var ws = new WebSocket(socketURL2);
-       ws.addEventListener('message',function(event) {
+  
+
+    idList.forEach((v,i) => document.getElementById("name-" + i).onclick = () => startPlay(i) )
+
+    var ws2 = new WebSocket(socketURL2);
+       ws2.addEventListener('message',function(event) {
             document.getElementById('data').innerHTML = event.data
             let gjj = JSON.parse(event.data)
             switch(gjj.type) {
@@ -117,22 +141,7 @@ var topZero = (r) =>  r>100? 100 : (r>0? r : 0)
                     if(!jj.rms) return
 
                     let id = false
-                    switch(gjj.data.id) {
-                        case 0:
-                            id = "France"
-                            break;
-                        case 1:
-                            id = "Canada"
-                            break;
-                        case 2:
-                            id = "Switzerland"
-                            break;
-                        case 3:
-                            id = "Germany"
-                            break;
-                        default:
-                            break;
-                    }
+                    id = idList[gjj.data.id]
                     if(id) {
                         document.getElementById("delay" + id).innerHTML = parseInt(gjj.data.delay.mean/48)+"ms"
                         document.getElementById("vumeterLeft" + id).style.height = topZero(100+gjj.data.peak[0]*2) + "%"

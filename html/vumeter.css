@@ -105,3 +105,22 @@ body {
 .hidden {
     display: none;
 }
+
+#player {
+    position: absolute;
+    width: 100%;
+    background-color: gray;
+    text-align: center;
+}
+
+#playbtn {
+    margin: auto;
+}
+
+#infos {
+    margin: auto;
+}
+
+.green {
+    color: green;
+}

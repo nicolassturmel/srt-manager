@@ -1,7 +1,7 @@
 body {
     width: 100vw;
     height: 100vh;
-    overflow-y: scroll;
+    overflow: hidden;
     color: white;
     font-weight: bold;
     background-color: #191919;
@@ -11,6 +11,8 @@ body {
     position: relative;
     width: 90%;
     height: 90%; 
+    max-width: 650px;
+    margin: auto;
 }    
 
 .dot {
@@ -178,4 +180,6 @@ body {
 #footer {
     font-size: 10pt;
     padding-top: 40px;
+    margin: auto;
+    text-align: center;
 }

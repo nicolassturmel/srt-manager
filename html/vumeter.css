@@ -148,7 +148,6 @@ body {
 #player {
     position: absolute;
     width: 100%;
-    background-color: gray;
     text-align: center;
 }
 
@@ -158,10 +157,25 @@ body {
 
 #infos {
     margin: auto;
+    width: 60%;
 }
 
 .green {
     color: green;
 
     stroke:green;
+}
+
+#text {
+    position: absolute;
+    width: 40%;
+    left:10%;
+    top:55%;
+    font-size: 11pt;
+    text-align: justify;
+}
+
+#footer {
+    font-size: 10pt;
+    padding-top: 40px;
 }

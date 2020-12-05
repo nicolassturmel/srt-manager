@@ -12,7 +12,7 @@
     
     <div id=player>
         <span id=playbtn></span>
-        <span id=infos>Clic on a city name to play audio</span>
+        <span id=infos>Clic on a city name to play audio transported via SRT to an AWS server in Francfort.</span>
     </div>
     <div id=canada class="floating canada">
         <div class=dot></div>
@@ -50,9 +50,14 @@
         <div class="vumeter left" ><div class=slider id=vumeterLeftSwitzerland></div></div>
         <div class="vumeter right"><div class=slider id=vumeterRightSwitzerland></div></div>
     </div>
+    <div id=text>
+        You are listening to streams from those cities, arriving at the AWS server and streamed to you via http. Expect 0.5s of additionnal latency caused by the http streaming.<br>
+        <br>The number (in ms) shown is the AES67 delay measured on the AWS server and mainly imposed by the SRT layer.
+    </div>
 </div>
-<div id=datasee>show / hide debug data</div>
+<div id=datasee class=hidden>show / hide debug data</div>
 <div id=data class=hidden></div>
+<div id=footer>webpage and backend code by Nicolas Sturmel, Merging Technologies, Sept-Dec 2020.</div>
 <script>
 
 var bufferstats = [{},{},{},{},{},{}]
@@ -100,9 +105,13 @@ var idList = [
         idList.forEach((v,i) => {
             document.getElementById("name-"+i).classList.remove("green")
             document.getElementById("line"+i).classList.remove("green")
+            document.getElementById("Xline"+i).classList.remove("green")
+            document.getElementById("Yline"+i).classList.remove("green")
         })
         
         document.getElementById("line"+sid).classList.add("green")
+        document.getElementById("Xline"+sid).classList.add("green")
+        document.getElementById("Yline"+sid).classList.add("green")
         document.getElementById("name-"+sid).classList.add("green")
     }
 
@@ -139,10 +148,25 @@ var idList = [
     idList.forEach((v,i) => {
         document.getElementById("name-" + i).onclick = () => startPlay(i)
         let l1 = document.createElement("div")
-        if(i != 3) l1.innerHTML = '<svg height="100%" width="100%">\
-            <line class=line id="line' + i + '" x1="0" y1="0" x2="100%" y2="100%" style="stroke-width:2" marker-start="url(#arrow)"/>\
+        if(i == 0) l1.innerHTML = '<svg height="100%" width="100%">\
+            <line class=line id="line' + i + '" x1="0" y1="0" x2="100%" y2="100%" style="stroke-width:2"/>\
+            <line class=line id="Xline' + i + '" x1="55%" y1="51%" x2="50%" y2="50%" style="stroke-width:2"/>\
+            <line class=line id="Yline' + i + '" x1="51%" y1="55%" x2="50%" y2="50%" style="stroke-width:2"/>\
             </svg>'
-        else l1.innerHTML = '<svg height="100%" width="100%"><line class=line id="line3" x2="0" y1="0" x1="100%" y2="100%" style="stroke-width:2" /></svg>'
+        else if(i == 1) l1.innerHTML = '<svg height="100%" width="100%">\
+            <line class=line id="line' + i + '" x1="0" y1="0" x2="100%" y2="100%" style="stroke-width:2"/>\
+            <line class=line id="Xline' + i + '" x1="45%" y1="49%" x2="50%" y2="50%" style="stroke-width:2"/>\
+            <line class=line id="Yline' + i + '" x1="49%" y1="45%" x2="50%" y2="50%" style="stroke-width:2"/>\
+            </svg>'
+        else if(i == 2) l1.innerHTML = '<svg height="100%" width="100%">\
+            <line class=line id="line' + i + '" x1="0" y1="0" x2="100%" y2="100%" style="stroke-width:2"/>\
+            <line class=line id="Xline' + i + '" x1="52%" y1="70%" x2="50%" y2="50%" style="stroke-width:2"/>\
+            <line class=line id="Yline' + i + '" x1="55%" y1="40%" x2="50%" y2="50%" style="stroke-width:2"/>\
+            </svg>'
+        else l1.innerHTML = '<svg height="100%" width="100%"><line class=line id="line3" x2="0" y1="0" x1="100%" y2="100%" style="stroke-width:2" /><\
+            <line class=line id="Xline' + i + '" x1="55%" y1="50%" x2="50%" y2="50%" style="stroke-width:2"/>\
+            <line class=line id="Yline' + i + '" x1="50%" y1="45%" x2="50%" y2="50%" style="stroke-width:2"/>\
+            /svg>'
         
         l1.className ="l"+i
         document.getElementById("container").appendChild(l1)

@@ -8,6 +8,8 @@
 </head>
 <body>
 <div id="container">
+
+    
     <div id=player>
         <span id=playbtn></span>
         <span id=infos>Clic on a city name to play audio</span>
@@ -69,6 +71,9 @@ var idList = [
 
  window.onload = function() {
 
+
+    var line = '<svg class height="200" width="200"><line x1="0" y1="0" x2="200" y2="200" style="stroke:rgb(255,0,0);stroke-width:2" /></svg>'
+    
    var socketURL = 'ws://'+self.location.host+'/pcm';
    var socketURL2 = 'ws://'+self.location.host+'/stats';
    var player = null
@@ -80,10 +85,10 @@ var idList = [
        }
        if(sid < 0) return
        player = new PCMPlayer({
-            encoding: '32bitInt',
+            encoding: '16bitInt',
             channels: 2,
             sampleRate: 48000,
-            flushingTime:2000
+            flushingTime:500
         });
         ws.send(JSON.stringify(
             {
@@ -92,8 +97,12 @@ var idList = [
         ))
         console.log("Sending " + sid)
 
-        idList.forEach((v,i) => document.getElementById("name-"+i).classList.remove("green"))
+        idList.forEach((v,i) => {
+            document.getElementById("name-"+i).classList.remove("green")
+            document.getElementById("line"+i).classList.remove("green")
+        })
         
+        document.getElementById("line"+sid).classList.add("green")
         document.getElementById("name-"+sid).classList.add("green")
     }
 
@@ -113,8 +122,9 @@ var idList = [
    // ws.onopen = () => document.getElementById("circle").classList.add("on")
    // ws.onclose = () => document.getElementById("circle").classList.remove("on")
     ws.addEventListener('message',function(event) {
+        ws.send("ping")
         var data = new Uint8Array(event.data);
-        console.log("Got DATA")
+        //console.log("Got DATA")
         if(player)
             player.feed(data);
     });
@@ -126,10 +136,21 @@ var idList = [
 
   
 
-    idList.forEach((v,i) => document.getElementById("name-" + i).onclick = () => startPlay(i) )
+    idList.forEach((v,i) => {
+        document.getElementById("name-" + i).onclick = () => startPlay(i)
+        let l1 = document.createElement("div")
+        if(i != 3) l1.innerHTML = '<svg height="100%" width="100%">\
+            <line class=line id="line' + i + '" x1="0" y1="0" x2="100%" y2="100%" style="stroke-width:2" marker-start="url(#arrow)"/>\
+            </svg>'
+        else l1.innerHTML = '<svg height="100%" width="100%"><line class=line id="line3" x2="0" y1="0" x1="100%" y2="100%" style="stroke-width:2" /></svg>'
+        
+        l1.className ="l"+i
+        document.getElementById("container").appendChild(l1)
+    } )
 
     var ws2 = new WebSocket(socketURL2);
        ws2.addEventListener('message',function(event) {
+            ws2.send("ping")
             document.getElementById('data').innerHTML = event.data
             let gjj = JSON.parse(event.data)
             switch(gjj.type) {
@@ -148,9 +169,12 @@ var idList = [
                         document.getElementById("vumeterRight" + id).style.height = topZero(100+gjj.data.peak[1]*2) + "%"
                         document.getElementById("errors" + id).innerHTML = "Lost " + gjj.data.seqError + " packets"
                         if(gjj.data.seqError != 0)
+                        {
                             document.getElementById("errors" + id).classList.add("red")
-                        else
+                        }
+                        else{
                             document.getElementById("errors" + id).classList.remove("red")
+                        }
                     }
                     break;
                 case "streams":

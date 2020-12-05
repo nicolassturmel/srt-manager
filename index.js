@@ -68,7 +68,7 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
 }
 
 let RtpReceivers = []
-var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd) => {
+var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,latency) => {
     let srt
 
     let mport = madd.split(".")[2]*256+parseInt(madd.split(".")[3])
@@ -79,7 +79,7 @@ var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd) => {
         srt = spawn("srt-live-transmit-derivate",["srt://"+srcHost+":"+srcPort+"?passphrase="+passphrase+"&enforcedencryption=true","srt://:" + localPort+"?passphrase="+passphrase+"&enforcedencryption=true","udp://" + madd + ":"+mport+"?adapter=127.0.0.1"])}
     else {
         console.log("no passprase")
-        srt = spawn("srt-live-transmit-derivate",["srt://"+srcHost+":"+srcPort+"?rcvlatency=150","srt://:" + localPort,"udp://" + madd + ":"+mport+"adapter=127.0.0.1"])
+        srt = spawn("srt-live-transmit-derivate",["srt://"+srcHost+":"+srcPort+((latency)? "?rcvlatency="+latency : ""),"srt://:" + localPort,"udp://" + madd + ":"+mport+"adapter=127.0.0.1"])
     }
 
     launchRtpReceiver(id)
@@ -193,20 +193,29 @@ server.on('upgrade', function upgrade(request, socket, head) {
     }
   });
 
+
 function openSocket() {
     wss = new WebSocket.Server({ 
         noServer: true 
     });
     console.log('Server ready...');
     wss.on('connection', function connection(ws) {
+        let watchDog = null
         console.log('Socket connected. sending data...');
         ws._selectedId = -1
         ws.on("error",() => console.log("You got halted due to an error"))
         ws.on('message', (m) => {
+            if(m == "ping") {
+                if(watchDog) clearTimeout(watchDog)
+                watchDog = setTimeout(() => {ws.terminate();console.log("ping too late")},2000)
+                return
+            }
             let msg = JSON.parse(m)
             console.log(m,msg)
             if(msg.id >= 0) {
                 ws._selectedId = msg.id
+                if(watchDog) clearTimeout(watchDog)
+                watchDog = setTimeout(() => {ws.terminate(),console.log("ping too late")},2000)
             }
         })
         // interval = setInterval(function() {
@@ -217,12 +226,18 @@ function openSocket() {
     wss2 = new WebSocket.Server({ noServer: true });
     console.log('Server ready...');
     wss2.on('connection', function connection(ws) {
+        let watchDog = setTimeout(() => {ws.terminate();console.log("ping too late")},2000)
         console.log('Socket connected. sending data...');
         ws.send(JSON.stringify({
             type: "params",
             data: params
         }));
         ws.on('message',(m) => {
+            if(m == "ping") {
+                clearTimeout(watchDog)
+                watchDog = setTimeout(() => {ws.terminate();console.log("ping too late")},2000)
+                return
+            }
             let msg = JSON.parse(m)
             console.log(m,msg)
             switch(msg.type) {
@@ -388,7 +403,7 @@ function sendData(struct) {
         if(client.readyState == WebSocket.OPEN)
             if(client._selectedId == struct.id){
                 client.send(struct.buffer)
-                console.log("Sent buffer " + struct.id)
+                //console.log("Sent buffer " + struct.id)
             }
     })
     struct.buffer = null
@@ -402,6 +417,11 @@ function sendData(struct) {
       }
     });
 }
+
+
+setInterval(() => {
+    console.log("Streaming to " + wss.clients.size + " clients")
+}, 2000);
 
 var launchRtpReceiver = (id) =>
 {
@@ -433,7 +453,7 @@ var launchRtpReceiver = (id) =>
   RtpReceivers[id] = worker
 }
 
-manualPush("",35001,35002,"no  name","239.100.100.1")
+manualPush("",35001,35002,"no  name","239.100.100.1",400)
 manualPush("3.231.208.13",9993,35102,"Rcv ROSS","239.100.100.2")
 manualPush("",35111,35112,"ROSS test","239.100.100.3")
 manualPush("",35121,35122,"DO test","239.100.100.4")

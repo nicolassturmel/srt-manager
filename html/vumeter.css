@@ -10,13 +10,15 @@ body {
 #container {
     position: relative;
     width: 90%;
-    height: 90%;
-    border: greenyellow 1px solid;
+    height: 90%; 
 }    
 
 .dot {
     width: 10px;
     height: 10px;
+    margin-top: -5px;
+    margin-left: -5px;
+    padding: 0;
     background-color: hotpink;
     border-radius: 50%;
 }
@@ -48,8 +50,44 @@ body {
     left: 80%;
 }
 .switzerland {
+    top: 55%;
+    right: 50px;
+}
+
+.line {
+    stroke:hotpink;
+}
+.l0 {
+    z-index: -1;
+    position: absolute;
+    bottom: 30%;
+    right: 20%;
+    top: 50%;
+    left: 50%;
+}
+.l1 {
+    z-index: -1;
+    position: absolute;
+    top: 20%;
+    left: 10%;
+    bottom: 50%;
+    right: 50%;
+}
+.l2 {
+    z-index: -1;
+    position: absolute;
     top: 50%;
     right: 50px;
+    bottom: 45%;
+    left: 50%;
+}
+.l3 {
+    z-index: -1;
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    top: 20%;
+    right: 20%;
 }
 
 .delay {
@@ -76,8 +114,9 @@ body {
     color: white;
     width: 150px;
     text-align: center;
+    background-color: rgba(19, 19, 19, 0.2);
     right:-75px;
-    top:-20px;
+    top:-30px;
 }
 
 .vumeter {
@@ -123,4 +162,6 @@ body {
 
 .green {
     color: green;
+
+    stroke:green;
 }

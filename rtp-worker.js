@@ -14,7 +14,7 @@ let timeOffset = 0n
 
 let interval = 0.1,
     sampleRate = 48000,
-    bytePerSample = 4,
+    bytePerSample = 2,
     bytePerSampleStream = 3,
     channels = 2
 
@@ -148,7 +148,7 @@ var getRtp = (params) => {
             else 
                 s = Math.pow(2,(8*bytePerSample-1))*(message.readFloatLE(sampleIndex*bytePerSampleStream*channels+12 + bytePerSampleStream*c )) 
 
-            rms[c].add((s / Math.pow(2,(8*bytePerSample-1)))*(s / Math.pow(2,(8*bytePerSample-1))))
+            rms[c].add((s / Math.pow(2,(8*4-1)))*(s / Math.pow(2,(8*4-1))))
             sL += mix[c][0]* s
             sR += mix[c][1]* s
           }
@@ -156,8 +156,14 @@ var getRtp = (params) => {
           if(sR > 2147483647) sR = 2147483647
           if(sL < -2147483648) sL = -2147483648
           if(sR < -2147483648) sR = -2147483648
-          buffer[currentBuffer].writeInt32LE(sL,bytePerSample * 2*currentPos)
-          buffer[currentBuffer].writeInt32LE(sR,bytePerSample * 2*currentPos + bytePerSample)
+          if(bytePerSample == 4) {
+            buffer[currentBuffer].writeInt32LE(sL,bytePerSample * 2*currentPos)
+            buffer[currentBuffer].writeInt32LE(sR,bytePerSample * 2*currentPos + bytePerSample)
+          }
+          else if(bytePerSample==2) {
+            buffer[currentBuffer].writeInt16LE(sL/Math.pow(2,17),bytePerSample * 2*currentPos)
+            buffer[currentBuffer].writeInt16LE(sR/Math.pow(2,17),bytePerSample * 2*currentPos + bytePerSample)
+          }
           currentPos += 1
 
         }

@@ -1,12 +1,18 @@
 body {
     width: 100vw;
-    height: 100vh;
+    height: max(90vw,90vh);
     overflow: hidden;
     color: white;
     font-weight: bold;
     background-color: #191919;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: bold;
 }
 
+u {
+    text-decoration-color: #B8BE14;
+    text-decoration-thickness: 3px;
+}
 #container {
     position: relative;
     width: 90%;
@@ -21,7 +27,7 @@ body {
     margin-top: -5px;
     margin-left: -5px;
     padding: 0;
-    background-color: hotpink;
+    background-color: #645D21;
     border-radius: 50%;
 }
 
@@ -57,7 +63,7 @@ body {
 }
 
 .line {
-    stroke:hotpink;
+    stroke:#645D21;
 }
 .l0 {
     z-index: -1;
@@ -97,16 +103,19 @@ body {
     bottom: -25px;
     width: 60px;
     height: 20px;
-    text-align: left;
+    line-height: 20px;
+    font-size: 16px;
+    text-align: center;
     background-color: white;
-    color: black;
+    color: #645D21;
 }
 .errors {
     position: absolute;
     bottom: -50px;
     width: 60px;
     height: 20px;
-    color: green;
+    color: #645D21;
+    font-size: 10pt;
 }
 .red {
     color: red;
@@ -116,9 +125,18 @@ body {
     color: white;
     width: 150px;
     text-align: center;
-    background-color: rgba(19, 19, 19, 0.2);
     right:-75px;
     top:-30px;
+}
+
+#name-0 {
+    right: -100px;
+    top:-25px;
+}
+
+#name-aws {
+    right: 0;
+    top: -10px;
 }
 
 .vumeter {
@@ -139,7 +157,7 @@ body {
 .slider {
     position: absolute;
     width: 100%;
-    background-color: green;
+    background-color: #B8BE14;
     bottom: 0;
 }
 
@@ -163,23 +181,37 @@ body {
 }
 
 .green {
-    color: green;
+    color: #B8BE14;
 
-    stroke:green;
+    stroke:#B8BE14;
 }
 
 #text {
     position: absolute;
-    width: 40%;
-    left:10%;
-    top:55%;
+    width: 50%;
+    left:5%;
+    max-height: 30%;
+    bottom:max(5%,min(20vw,15%));
     font-size: 11pt;
     text-align: justify;
+    overflow: hidden;
 }
 
 #footer {
-    font-size: 10pt;
-    padding-top: 40px;
-    margin: auto;
+    position: absolute;
+    bottom: 0;
+    font-size: min(5pt,min(1vh,1vw));
+    font-weight: 100;
+    width: 100%;
     text-align: center;
+}
+
+#logos {
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+}
+
+img {
+    width: 25%;
 }

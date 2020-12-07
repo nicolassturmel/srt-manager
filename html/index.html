@@ -12,7 +12,7 @@
     
     <div id=player>
         <span id=playbtn></span>
-        <span id=infos>Clic on a city name to play audio transported via SRT to an AWS server in Francfort.</span>
+        <span id=infos><u>Click on a city name</u> to play audio transported via SRT to an AWS server in Frankfurt</span>
     </div>
     <div id=canada class="floating canada">
         <div class=dot></div>
@@ -24,7 +24,7 @@
     </div>
     <div id=awsfran class="floating awsfran">
         <div class="dot aws"></div>
-        <div class=name >AWS - Francfort</div>
+        <div class=name id="name-aws">AWS - Frankfurt</div>
     </div>
     <div id=germany class="floating germany">
         <div class=dot></div>
@@ -50,14 +50,18 @@
         <div class="vumeter left" ><div class=slider id=vumeterLeftSwitzerland></div></div>
         <div class="vumeter right"><div class=slider id=vumeterRightSwitzerland></div></div>
     </div>
+    <div id=logos><img src=Logo1.png><img src=Logo2.png><img src=Logo3.png><img src=Logo4.png></div>
     <div id=text>
-        You are listening to streams from those cities, arriving at the AWS server and streamed to you via http. Expect 0.5s of additionnal latency caused by the http streaming.<br>
-        <br>The number (in ms) shown is the AES67 delay measured on the AWS server and mainly imposed by the SRT layer.
+        Transcontinental AES67 and RAVENNA audio!
+<br><br>
+You are listening to audio streamed from Canada, cities in France, Germany and Switzerland. Audio arrives at the AWS server and is streamed to you via http. Expect 0.5s of additional latency caused by the http streaming.
+<br><br>
+The number shown (in ms) is the AES67 delay measured on the AWS server and mainly imposed by the SRT layer.
     </div>
+    <div id=footer>Webpage and backend by Nicolas Sturmel, Merging Technologies, Sept-Dec 2020</div>
 </div>
 <div id=datasee class=hidden>show / hide debug data</div>
 <div id=data class=hidden></div>
-<div id=footer>webpage and backend code by Nicolas Sturmel, Merging Technologies, Sept-Dec 2020 except pcm-player.js<br>Some code from: https://github.com/nicolassturmel/aes67-web-monitor</div>
 <script>
 
 var bufferstats = [{},{},{},{},{},{}]
@@ -97,7 +101,7 @@ var idList = [
         });
         ws.send(JSON.stringify(
             {
-                id: sid
+                id: (sid==3)? 4 : sid
             }
         ))
         console.log("Sending " + sid)
@@ -187,6 +191,8 @@ var idList = [
 
                     let id = false
                     id = idList[gjj.data.id]
+                    if(gjj.data.id==3) break
+                    if(gjj.data.id==4) id=idList[3]
                     if(id) {
                         document.getElementById("delay" + id).innerHTML = parseInt(gjj.data.delay.mean/48)+"ms"
                         document.getElementById("vumeterLeft" + id).style.height = topZero(100+gjj.data.peak[0]*2) + "%"

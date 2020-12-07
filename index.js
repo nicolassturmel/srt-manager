@@ -127,6 +127,11 @@ var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,laten
                         sss[0].target_state = false;
                         break;
                     case "SRT source disconnected":
+                        if(sss[0].source_state == true && RtpReceivers[id])
+                            RtpReceivers[id].postMessage({
+                                type: "clear",
+                                data: ""
+                            })
                         sss[0].source_state = false;
                         break;
                     default:

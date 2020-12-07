@@ -6,6 +6,7 @@ var tai = require("t-a-i");
 var inter_packet_stats = new stats()
 var delay_stats = new stats()
 var rms = [new stats(), new stats()]
+let seqError = 0
 const { parentPort , workerData } = require('worker_threads')
 
 console.log(workerData)
@@ -65,7 +66,6 @@ var getRtp = (params) => {
     let lastSeq = 0
     let lastTime = BigInt(0)
   
-    let seqError = 0
     client.on('message', function (message, remote) {   
         //console.log(".")
         let v = message.readInt8(0)
@@ -192,6 +192,7 @@ parentPort.on("message",(t) => {
             inter_packet_stats.clear()
             delay_stats.clear()
             rms.forEach(e => e.clear())
+            seqError = 0
             break
         default:
             break;

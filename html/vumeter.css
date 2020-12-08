@@ -1,6 +1,7 @@
 body {
     width: 100vw;
     height: min(900px,max(90vw,90vh));
+    margin-top: -50px;
     overflow: hidden;
     color: white;
     font-weight: bold;
@@ -168,6 +169,7 @@ u {
 
 #player {
     position: absolute;
+    top: 70px;
     width: 100%;
     text-align: center;
 }

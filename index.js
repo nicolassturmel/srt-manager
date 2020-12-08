@@ -71,7 +71,7 @@ let RtpReceivers = []
 var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,latency) => {
     let srt
 
-    let mport = madd.split(".")[2]*256+parseInt(madd.split(".")[3])
+    let mport = ((madd.split(".")[2]+100))*256+parseInt(madd.split(".")[3])
     if(passphrase) {
         if(passphrase.length < 10)
             passphrase = passphrase.padStart(10,'0')
@@ -262,7 +262,7 @@ function openSocket() {
   openSocket()
 
 app.get('/', function (req, res) {
-    res.send('<div id=root>ROOT</div>')
+    res.sendFile("/home/ubuntu/srt-manager/html/index.html")
   })
 
 app.post('/sdp', (req,res) => {
@@ -458,12 +458,12 @@ var launchRtpReceiver = (id) =>
   RtpReceivers[id] = worker
 }
 
-manualPush("",35001,35002,"no  name","239.100.100.1",400)
-manualPush("3.231.208.13",9993,35102,"Rcv ROSS","239.100.100.2")
-manualPush("",35111,35112,"ROSS test","239.100.100.3")
-manualPush("",35121,35122,"DO test","239.100.100.4")
-manualPush("",35131,35132,"GDS1","239.100.100.5")
-manualPush("",35141,35142,"GDS2","239.100.100.6")
-manualPush("",35123,35124,"GDS3","239.100.100.7")
-manualPush("",35133,35134,"GDS4","239.100.100.8")
-manualPush("",35151,35152,"Pyramix NSL","239.100.100.9")
+manualPush("",35001,35002,"no  name","127.0.0.1",400)
+manualPush("3.231.208.13",9993,35102,"Rcv ROSS","127.0.0.2")
+manualPush("",35111,35112,"ROSS test","127.0.0.3")
+manualPush("",35121,35122,"DO test","127.0.0.4")
+manualPush("",35131,35132,"GDS1","127.0.0.5")
+manualPush("",35141,35142,"GDS2","127.0.0.6")
+manualPush("",35123,35124,"GDS3","127.0.0.7")
+manualPush("",35133,35134,"GDS4","127.0.0.8")
+manualPush("",35151,35152,"Pyramix NSL","127.0.0.9")

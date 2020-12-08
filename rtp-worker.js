@@ -50,8 +50,9 @@ var getRtp = (params) => {
 
     // check multi
     let b1 = parseInt(madd.split(".")[0])
+    let isMulticast = true
     if(b1 < 224 || b1 > 240)
-        return
+        isMulticast = false
 
     let offset = params.offset || 0
     client = dgram.createSocket({ type: "udp4", reuseAddr: true });
@@ -60,7 +61,7 @@ var getRtp = (params) => {
         console.log('UDP Client listening on ' + madd + ":" + port);
         client.setBroadcast(true)
         client.setMulticastTTL(128); 
-        client.addMembership(madd,host);
+        if(isMulticast) client.addMembership(madd,host);
     });
   
     let lastSeq = 0

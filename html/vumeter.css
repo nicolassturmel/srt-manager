@@ -1,12 +1,13 @@
 body {
     width: 100vw;
-    height: max(90vw,90vh);
+    height: min(900px,max(90vw,90vh));
     overflow: hidden;
     color: white;
     font-weight: bold;
     background-color: #191919;
     font-family: 'Open Sans', sans-serif;
     font-weight: bold;
+    overflow-y: scroll;
 }
 
 u {

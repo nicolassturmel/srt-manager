@@ -60,8 +60,6 @@ The number shown (in ms) is the AES67 delay measured on the AWS server and mainl
     </div>
     <div id=footer>Webpage and backend by Nicolas Sturmel, Merging Technologies, Sept-Dec 2020</div>
 </div>
-<div id=datasee class=hidden>show / hide debug data</div>
-<div id=data class=hidden></div>
 <script>
 
 var bufferstats = [{},{},{},{},{},{}]
@@ -120,15 +118,7 @@ var idList = [
     }
 
    
-   document.getElementById("datasee").onclick = () => {
-    if(data) {
-        document.getElementById("data").classList.remove("hidden")
-    }
-    else {
-        document.getElementById("data").classList.add("hidden")
-    }
-    data = !data
-   }
+  
 
    var ws = new WebSocket(socketURL);
     ws.binaryType = 'arraybuffer';
@@ -179,7 +169,6 @@ var idList = [
     var ws2 = new WebSocket(socketURL2);
        ws2.addEventListener('message',function(event) {
             ws2.send("ping")
-            document.getElementById('data').innerHTML = event.data
             let gjj = JSON.parse(event.data)
             switch(gjj.type) {
                 case "stats":

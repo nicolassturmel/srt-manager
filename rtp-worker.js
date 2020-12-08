@@ -94,7 +94,7 @@ var getRtp = (params) => {
                 console.log("init")
             else
                 seqError+=seq-lastSeq-1
-          console.log("ERROR Got Seq: ",seq," Should be ",lastSeq + 1)
+          //console.log("ERROR Got Seq: ",seq," Should be ",lastSeq + 1)
         }
         lastSeq = seq
         if(lastSeq == 65535) lastSeq = -1

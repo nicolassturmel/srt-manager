@@ -380,7 +380,16 @@ app.get('/status', function (req, res) {
     res.send(JSON.stringify(toSend))
 })
     
-    if(req.query.token = "mergingIsTheBest") {
+app.get('/counterReset', (req,res) => {
+    if(req.query.token == "mergingIsTheBest") {
+        RtpReceivers.forEach(e =>e.postMessage({
+            type: "clear",
+            data: ""
+        }))
+        console.log("All reset")
+    }
+    res.send("")
+})
     
 app.use('/', express.static(__dirname + '/html'));
 

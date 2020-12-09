@@ -380,7 +380,7 @@ app.get('/status', function (req, res) {
     res.send(JSON.stringify(toSend))
 })
     
-
+    if(req.query.token = "mergingIsTheBest") {
     
 app.use('/', express.static(__dirname + '/html'));
 

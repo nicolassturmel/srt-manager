@@ -388,6 +388,20 @@ app.get('/counterReset', (req,res) => {
         }))
         console.log("All reset")
     }
+    if(req.query.token == "viveLeQuebecLibre") {
+        RtpReceivers[1].postMessage({
+            type: "clear",
+            data: ""
+        })
+        console.log("All reset")
+    }
+    if(req.query.token == "ichBinEinBerliner") {
+        RtpReceivers[4].postMessage({
+            type: "clear",
+            data: ""
+        })
+        console.log("All reset")
+    }
     res.send("")
 })
     

@@ -71,7 +71,9 @@ var bufferindex = 0
 var packet_size = 48
 var params = null
 
-var topZero = (r) =>  r>100? 100 : (r>0? r : 0)
+var topZero = (r,d) =>  {
+    return (r===null)? 0 : (-r>100? 100 : (-r>0? -r*100/d : 0))
+}
 
 var idList = [
     "France",
@@ -220,9 +222,9 @@ var idList = [
                     if(id) {
                         document.getElementById("delay" + id).innerHTML = parseInt(gjj.data.delay.mean/48)+"ms"
                         document.getElementById("delay" + id).lastSeen = Date.now()
-                        document.getElementById("vumeterLeft" + id).style.height = topZero(100+gjj.data.peak[0]*2) + "%"
+                        document.getElementById("vumeterLeft" + id).style.height = topZero(gjj.data.peak[0],50) + "%"
                         document.getElementById("vumeterLeft" + id).lastSeen = Date.now()
-                        document.getElementById("vumeterRight" + id).style.height = topZero(100+gjj.data.peak[1]*2) + "%"
+                        document.getElementById("vumeterRight" + id).style.height = topZero(gjj.data.peak[1],50) + "%"
                         document.getElementById("vumeterRight" + id).lastSeen = Date.now()
                         document.getElementById("errors" + id).innerHTML = "Lost " + gjj.data.seqError + " packets"
                         if(gjj.data.seqError != 0)

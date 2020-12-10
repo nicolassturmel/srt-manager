@@ -72,7 +72,7 @@ var packet_size = 48
 var params = null
 
 var topZero = (r,d) =>  {
-    return (r===null)? 0 : (-r>100? 100 : (-r>0? -r*100/d : 0))
+    return (r===null)? 0 : (-r>100? 100 : (-r>0? 100+r*100/d : 0))
 }
 
 var idList = [
@@ -177,8 +177,9 @@ var idList = [
                     console.log("Missing v")
                     return
                 }
-                if(Date.now - e.lastSeen > 2000 || e.lastSeen === undefined) {
+                if(Date.now()- e.lastSeen > 2000 || e.lastSeen === undefined) {
                     e.classList.add("missing")
+                    e.style.height = "100%"
                 }
                 else
                     e.classList.remove("missing")
@@ -189,7 +190,7 @@ var idList = [
                     console.log("Missing v")
                     return
                 }
-                if(Date.now - e.lastSeen > 2000 || e.lastSeen === undefined) {
+                if(Date.now() - e.lastSeen > 2000 || e.lastSeen === undefined) {
                     e.innerHTML = "offline"
                 }
             }

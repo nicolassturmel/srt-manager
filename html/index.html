@@ -170,6 +170,37 @@ var idList = [
         document.getElementById("container").appendChild(l1)
     } )
 
+    var elemWatchDog = (e) => {
+                if(!e) {
+                    console.log("Missing v")
+                    return
+                }
+                if(Date.now - e.lastSeen > 2000 || e.lastSeen === undefined) {
+                    e.classList.add("missing")
+                }
+                else
+                    e.classList.remove("missing")
+            }
+
+    var msgWatchDog = (e) => {
+                if(!e) {
+                    console.log("Missing v")
+                    return
+                }
+                if(Date.now - e.lastSeen > 2000 || e.lastSeen === undefined) {
+                    e.innerHTML = "offline"
+                }
+            }
+
+    setInterval(()=>{
+        idList.forEach((v,i) => {
+            
+            elemWatchDog(document.getElementById("vumeterLeft" + v))
+            elemWatchDog(document.getElementById("vumeterRight" + v))  
+            msgWatchDog(document.getElementById("delay" + v))              
+        })
+    },2000)
+
     var ws2 = new WebSocket(socketURL2);
        ws2.addEventListener('message',function(event) {
             ws2.send("ping")
@@ -188,8 +219,11 @@ var idList = [
                     if(gjj.data.id==4) id=idList[3]
                     if(id) {
                         document.getElementById("delay" + id).innerHTML = parseInt(gjj.data.delay.mean/48)+"ms"
+                        document.getElementById("delay" + id).lastSeen = Date.now()
                         document.getElementById("vumeterLeft" + id).style.height = topZero(100+gjj.data.peak[0]*2) + "%"
+                        document.getElementById("vumeterLeft" + id).lastSeen = Date.now()
                         document.getElementById("vumeterRight" + id).style.height = topZero(100+gjj.data.peak[1]*2) + "%"
+                        document.getElementById("vumeterRight" + id).lastSeen = Date.now()
                         document.getElementById("errors" + id).innerHTML = "Lost " + gjj.data.seqError + " packets"
                         if(gjj.data.seqError != 0)
                         {

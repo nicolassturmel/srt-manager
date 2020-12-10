@@ -228,3 +228,13 @@ u {
 img {
     width: 25%;
 }
+
+.missing {
+    height: 100%;background: repeating-linear-gradient(
+        30deg,
+        white,
+        white 7px,
+        #645D21 7px,
+        #645D21 14px
+      );
+}

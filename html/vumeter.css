@@ -238,3 +238,11 @@ img {
         #645D21 14px
       );
 }
+
+#stop {
+    position: absolute;
+    top: 20%;
+    width: 80px;
+    left: calc(50% - 40px);
+    text-align: center;
+}

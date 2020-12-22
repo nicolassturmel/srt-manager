@@ -2,6 +2,7 @@
 
 const { spawn } = require('child_process');
 var http = require('http')
+var https = require('https')
 const WebSocket = require('ws');
 const { Worker } = require('worker_threads')
 const url = require('url');
@@ -171,32 +172,59 @@ const bodyParser = require('body-parser');
 const { kill } = require('process');
 
 
-const server = http.createServer(app);
-app.use(bodyParser.text());
+let fs = require("fs")
 
-server.listen(80, function () {
-    console.log('Example app listening on port 80!')
+
+const server = http.createServer(app);
+const sserver = https.createServer({
+    key: fs.readFileSync('domain.key'),
+    cert: fs.readFileSync('domain.crt')
+  },app);
+app.use(bodyParser.text());
+app.use('/', express.static(__dirname + '/html'));
+
+server.listen(30080, function () {
+    console.log('Example app listening on port 30080!')
+})
+sserver.listen(443, function () {
+    console.log('Example app https listening on port 443!')
 })
 
 let wss,
     wss2;
 
-server.on('upgrade', function upgrade(request, socket, head) {
-    console.log("upgrade")
-    const pathname = url.parse(request.url).pathname;
-  
-    if (pathname === '/pcm') {
-      wss.handleUpgrade(request, socket, head, function done(ws) {
-        wss.emit('connection', ws, request);
+    server.on('upgrade', function upgrade(request, socket, head) {
+        console.log("upgrade")
+        const pathname = url.parse(request.url).pathname;
+      
+        if (pathname === '/pcm') {
+          wss.handleUpgrade(request, socket, head, function done(ws) {
+            wss.emit('connection', ws, request);
+          });
+        } else if (pathname === '/stats') {
+          wss2.handleUpgrade(request, socket, head, function done(ws) {
+            wss2.emit('connection', ws, request);
+          });
+        } else {
+          socket.destroy();
+        }
       });
-    } else if (pathname === '/stats') {
-      wss2.handleUpgrade(request, socket, head, function done(ws) {
-        wss2.emit('connection', ws, request);
-      });
-    } else {
-      socket.destroy();
-    }
-  });
+    sserver.on('upgrade', function upgrade(request, socket, head) {
+        console.log("upgrade")
+        const pathname = url.parse(request.url).pathname;
+        
+        if (pathname === '/pcm') {
+            wss.handleUpgrade(request, socket, head, function done(ws) {
+            wss.emit('connection', ws, request);
+            });
+        } else if (pathname === '/stats') {
+            wss2.handleUpgrade(request, socket, head, function done(ws) {
+            wss2.emit('connection', ws, request);
+            });
+        } else {
+            socket.destroy();
+        }
+    });
 
 
 function openSocket() {
@@ -405,7 +433,6 @@ app.get('/counterReset', (req,res) => {
     res.send("")
 })
     
-app.use('/', express.static(__dirname + '/html'));
 
 let manualPush = (host,source,destination,name,madd) => {
     let id = g_id++

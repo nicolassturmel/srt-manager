@@ -1,1 +1,11 @@
 node_modules
+csr.pem
+domain.crt
+domain.csr
+domain.key
+get-docker.sh
+key.pem
+server.cert
+server.key
+keys_and_certs/account.key
+html/img/test.txt

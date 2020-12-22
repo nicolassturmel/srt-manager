@@ -168,6 +168,7 @@ var srtConfigs = []
 
 const express = require('express')
 const app = express()
+const appUnsecure = express()
 const bodyParser = require('body-parser');
 const { kill } = require('process');
 
@@ -175,16 +176,17 @@ const { kill } = require('process');
 let fs = require("fs")
 
 
-const server = http.createServer(app);
+const server = http.createServer(appUnsecure);
 const sserver = https.createServer({
     key: fs.readFileSync('domain.key'),
     cert: fs.readFileSync('domain.crt')
   },app);
 app.use(bodyParser.text());
 app.use('/', express.static(__dirname + '/html'));
+app.use('/', express.static(__dirname + '/htmlUnsecure'));
 
-server.listen(30080, function () {
-    console.log('Example app listening on port 30080!')
+server.listen(80, function () {
+    console.log('Example app listening on port 80!')
 })
 sserver.listen(443, function () {
     console.log('Example app https listening on port 443!')

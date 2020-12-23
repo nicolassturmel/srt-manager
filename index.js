@@ -6,8 +6,9 @@ var https = require('https')
 const WebSocket = require('ws');
 const { Worker } = require('worker_threads')
 const url = require('url');
+var wsClient = require('../merging-wan/tools/messageClient.js')
 
-var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
+var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase,rname) => {
     let srt
     if(passphrase) {
         if(passphrase.length < 10)
@@ -38,15 +39,19 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
                 switch(last) {
                     case "Accepted SRT target connection":
                         sss[0].target_state = true;
+                        if(rname) wsClient.send(rname,{ relayTargetConnected: true})
                         break;
                     case "Accepted SRT source connection":
                         sss[0].source_state = true;
+                        if(rname) wsClient.send(rname,{ relaySourceConnected: true})
                         break;
                     case "SRT target disconnected":
                         sss[0].target_state = false;
+                        if(rname) wsClient.send(rname,{ relayTargetConnected: false})
                         break;
                     case "SRT source disconnected":
                         sss[0].source_state = false;
+                        if(rname) wsClient.send(rname,{ relaySourceConnected: false})
                         break;
                     default:
                         break
@@ -68,8 +73,10 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase) => {
     return srt
 }
 
+wsClient.run("ws://18.193.138.129:38080/update","18.193.138.129")
+
 let RtpReceivers = []
-var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,latency) => {
+var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,latency,rname) => {
     let srt
 
     let mport = ((madd.split(".")[2]+100))*256+parseInt(madd.split(".")[3])
@@ -113,6 +120,7 @@ var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,laten
 
             let lasts = sss[0].log.split("<br>")
             let span = Math.min(4, lasts.length)
+
             for(let lineIndex = 0; lineIndex < span; lineIndex++)
             {
                 let last = lasts[lasts.length-span+lineIndex]
@@ -120,12 +128,15 @@ var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,laten
                 switch(last) {
                     case "Accepted SRT target connection":
                         sss[0].target_state = true;
+                        if(rname) wsClient.send(rname,{ relayTargetConnected: true})
                         break;
                     case "Accepted SRT source connection":
                         sss[0].source_state = true;
+                        if(rname) wsClient.send(rname,{ relaySourceConnected: true})
                         break;
                     case "SRT target disconnected":
                         sss[0].target_state = false;
+                        if(rname) wsClient.send(rname,{ relayTargetConnected: false})
                         break;
                     case "SRT source disconnected":
                         if(sss[0].source_state == true && RtpReceivers[id])
@@ -134,6 +145,7 @@ var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,laten
                                 data: ""
                             })
                         sss[0].source_state = false;
+                        if(rname) wsClient.send(rname,{ relaySourceConnected: false})
                         break;
                     default:
                         break
@@ -172,9 +184,7 @@ const appUnsecure = express()
 const bodyParser = require('body-parser');
 const { kill } = require('process');
 
-
 let fs = require("fs")
-
 
 const server = http.createServer(appUnsecure);
 const sserver = https.createServer({
@@ -338,12 +348,13 @@ app.get('/status', function (req, res) {
                 let source = req.query.source
                 let destination = req.query.destination
                 let passphrase = req.query.passphrase 
+                let name = req.query.name || ""
 
                 srtConfigs.push({
                     mode: "pingpong",
                     id: id,
-                    process: newSrtPingPong(id,host,source,destination,passphrase),
-                    name: req.name,
+                    process: newSrtPingPong(id,host,source,destination,passphrase,name),
+                    name: name,
                     host: host,
                     source: source,
                     destination: destination,
@@ -441,7 +452,7 @@ let manualPush = (host,source,destination,name,madd) => {
     srtConfigs.push({
         mode: "pingpong",
         id: id,
-        process: newSrtPingPongDerivate(id,host,source,destination,undefined,madd),
+        process: newSrtPingPongDerivate(id,host,source,destination,undefined,madd,null,name),
         derivate: madd,
         host: host,
         source: source,

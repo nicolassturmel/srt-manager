@@ -8,16 +8,17 @@ const { Worker } = require('worker_threads')
 const url = require('url');
 var wsClient = require('../merging-wan/tools/messageClient.js')
 
-var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase,rname) => {
+var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase,rname,latency) => {
     let srt
+    if(!latency) latency = 200
     if(passphrase) {
         if(passphrase.length < 10)
             passphrase = passphrase.padStart(10,'0')
         console.log("passphrase: " + passphrase)
-        srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort+"?passphrase="+passphrase+"&enforcedencryption=true","srt://:" + localPort+"?passphrase="+passphrase+"&enforcedencryption=true"])}
+        srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort+"?passphrase="+passphrase+"&enforcedencryption=true&rcvlatency=" + latency,"srt://:" + localPort+"?passphrase="+passphrase+"&enforcedencryption=true"])}
     else {
         console.log("no passprase")
-        srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort+"?rcvlatency=200","srt://:" + localPort])
+        srt = spawn("srt-live-transmit",["srt://"+srcHost+":"+srcPort+"?rcvlatency=" + latency,"srt://:" + localPort])
     }
     srt.stdout.on('data', (data) => {
         console.log(id + ` stdout: ${data}`);
@@ -349,16 +350,18 @@ app.get('/status', function (req, res) {
                 let destination = req.query.destination
                 let passphrase = req.query.passphrase 
                 let name = req.query.name || ""
+                let latency = req.query.latency 
 
                 srtConfigs.push({
                     mode: "pingpong",
                     id: id,
-                    process: newSrtPingPong(id,host,source,destination,passphrase,name),
+                    process: newSrtPingPong(id,host,source,destination,passphrase,name,latency),
                     name: name,
                     host: host,
                     source: source,
                     destination: destination,
                     status: 1,
+                    latency: latency,
                     log: "",
                     source_state: false,
                     target_state: false,

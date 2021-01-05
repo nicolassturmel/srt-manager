@@ -7,6 +7,12 @@ const WebSocket = require('ws');
 const { Worker } = require('worker_threads')
 const url = require('url');
 var wsClient = require('../merging-wan/tools/messageClient.js')
+const commandLineArgs = require('command-line-args')
+const optionDefinitions = [
+    { name: 'backend', alias: 'b', type: String },
+    { name: 'name', alias: 'n', type: String}
+]
+var options = commandLineArgs(optionDefinitions)
 
 var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase,rname,latency) => {
     let srt
@@ -74,7 +80,10 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase,rname,latency) => 
     return srt
 }
 
-wsClient.run("ws://18.193.138.129:38080/update","18.193.138.129")
+if(!options.backend) options.backend = "18.193.138.129"
+if(!options.name) options.name = "name not given"
+
+wsClient.run("ws://"+options.backend+":38080/update",options.name)
 
 let RtpReceivers = []
 var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,latency,rname) => {

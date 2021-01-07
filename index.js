@@ -82,7 +82,7 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase,rname,latency) => 
     return srt
 }
 
-if(!options.backend) options.backend = "ws://18.193.138.129:38080"
+if(!options.backend) options.backend = "http://18.193.138.129:38080"
 if(!options.name) options.name = "name not given"
 if(!options.http) options.http = 80
 if(!options.https) options.https = 443
@@ -298,7 +298,7 @@ function openSocket() {
         console.log('Socket connected. sending data...');
         ws.send(JSON.stringify({
             type: "params",
-            data: params
+            data: ""
         }));
         ws.on('message',(m) => {
             if(m == "ping") {

@@ -82,13 +82,17 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase,rname,latency) => 
     return srt
 }
 
-if(!options.backend) options.backend = "18.193.138.129"
+if(!options.backend) options.backend = "ws://18.193.138.129:38080"
 if(!options.name) options.name = "name not given"
 if(!options.http) options.http = 80
 if(!options.https) options.https = 443
 console.log(options)
 
-wsClient.run("ws://"+options.backend+":38080/update",options.name)
+var makeWS = (u) => {
+    return options.backend.replace("http","ws")
+}
+
+wsClient.run(makeWS(options.backend)+"/update",options.name)
 
 let RtpReceivers = []
 var newSrtPingPongDerivate = (id,srcHost,srcPort,localPort,passphrase,madd,latency,rname) => {

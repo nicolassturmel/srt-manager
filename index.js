@@ -201,8 +201,8 @@ const { kill } = require('process');
 
 let fs = require("fs")
 
-const server = (options.https == 0)? http.createServer(app) : http.createServer(appUnsecure);
-const sserver = (options.https == 0)? null : https.createServer({
+const server = (options.https == -1)? http.createServer(app) : http.createServer(appUnsecure);
+const sserver = (options.https == -1)? null : https.createServer({
     key: fs.readFileSync('domain.key'),
     cert: fs.readFileSync('domain.crt')
   },app);

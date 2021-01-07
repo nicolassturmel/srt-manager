@@ -10,7 +10,9 @@ var wsClient = require('../merging-wan/tools/messageClient.js')
 const commandLineArgs = require('command-line-args')
 const optionDefinitions = [
     { name: 'backend', alias: 'b', type: String },
-    { name: 'name', alias: 'n', type: String}
+    { name: 'name', alias: 'n', type: String},
+    { name: "http", alias: 'h', type: Number},
+    { name: "https", alias: 's', type: Number}
 ]
 var options = commandLineArgs(optionDefinitions)
 
@@ -82,6 +84,9 @@ var newSrtPingPong = (id,srcHost,srcPort,localPort,passphrase,rname,latency) => 
 
 if(!options.backend) options.backend = "18.193.138.129"
 if(!options.name) options.name = "name not given"
+if(!options.http) options.http = 80
+if(!options.https) options.https = 443
+console.log(options)
 
 wsClient.run("ws://"+options.backend+":38080/update",options.name)
 
@@ -196,8 +201,8 @@ const { kill } = require('process');
 
 let fs = require("fs")
 
-const server = http.createServer(appUnsecure);
-const sserver = https.createServer({
+const server = (options.https == 0)? http.createServer(app) : http.createServer(appUnsecure);
+const sserver = (options.https == 0)? null : https.createServer({
     key: fs.readFileSync('domain.key'),
     cert: fs.readFileSync('domain.crt')
   },app);
@@ -205,15 +210,35 @@ app.use(bodyParser.text());
 app.use('/', express.static(__dirname + '/html'));
 app.use('/', express.static(__dirname + '/htmlUnsecure'));
 
-server.listen(80, function () {
-    console.log('Example app listening on port 80!')
-})
-sserver.listen(443, function () {
-    console.log('Example app https listening on port 443!')
-})
 
 let wss,
     wss2;
+
+server.listen(options.http, function () {
+    console.log('Example app listening on port 80!')
+})
+if(options.https > 0)  {
+    sserver.listen(options.https, function () {
+        console.log('Example app https listening on port 443!')
+    })
+
+    sserver.on('upgrade', function upgrade(request, socket, head) {
+        console.log("upgrade")
+        const pathname = url.parse(request.url).pathname;
+        
+        if (pathname === '/pcm') {
+            wss.handleUpgrade(request, socket, head, function done(ws) {
+            wss.emit('connection', ws, request);
+            });
+        } else if (pathname === '/stats') {
+            wss2.handleUpgrade(request, socket, head, function done(ws) {
+            wss2.emit('connection', ws, request);
+            });
+        } else {
+            socket.destroy();
+        }
+    });
+}
 
     server.on('upgrade', function upgrade(request, socket, head) {
         console.log("upgrade")
@@ -231,22 +256,6 @@ let wss,
           socket.destroy();
         }
       });
-    sserver.on('upgrade', function upgrade(request, socket, head) {
-        console.log("upgrade")
-        const pathname = url.parse(request.url).pathname;
-        
-        if (pathname === '/pcm') {
-            wss.handleUpgrade(request, socket, head, function done(ws) {
-            wss.emit('connection', ws, request);
-            });
-        } else if (pathname === '/stats') {
-            wss2.handleUpgrade(request, socket, head, function done(ws) {
-            wss2.emit('connection', ws, request);
-            });
-        } else {
-            socket.destroy();
-        }
-    });
 
 
 function openSocket() {

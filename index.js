@@ -546,7 +546,7 @@ var launchRtpReceiver = (id) =>
   RtpReceivers[id] = worker
 }
 
-manualPush("",35001,35002,"no  name","127.0.0.1",400)
+/*manualPush("",35001,35002,"no  name","127.0.0.1",400)
 manualPush("3.231.208.13",9993,35102,"Rcv ROSS","127.0.0.2")
 manualPush("",35111,35112,"ROSS test","127.0.0.3")
 manualPush("",35121,35122,"DO test","127.0.0.4")
@@ -554,4 +554,4 @@ manualPush("",35131,35132,"GDS1","127.0.0.5")
 manualPush("",35141,35142,"GDS2","127.0.0.6")
 manualPush("",35123,35124,"GDS3","127.0.0.7")
 manualPush("",35133,35134,"GDS4","127.0.0.8")
-manualPush("",35151,35152,"Pyramix NSL","127.0.0.9")
+manualPush("",35151,35152,"Pyramix NSL","127.0.0.9")*/

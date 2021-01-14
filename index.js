@@ -6,7 +6,7 @@ var https = require('https')
 const WebSocket = require('ws');
 const { Worker } = require('worker_threads')
 const url = require('url');
-var wsClient = require('messageClient.js')
+var wsClient = require('./messageClient.js')
 const commandLineArgs = require('command-line-args')
 const optionDefinitions = [
     { name: 'backend', alias: 'b', type: String },
